@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lesson 4 · LangGraph Introduction — MokshPath</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --orange:#E87A2E;--orange-dark:#D06A20;--orange-light:#F5943E;--orange-glow:rgba(232,122,46,0.12);
+  --navy:#2B2D42;--navy-dark:#1A1B2E;
+  --bg:#F3EDE7;--bg-card:#FFFFFF;--bg-light:#F9F5F0;
+  --text-primary:#2B2D42;--text-secondary:#6B6D7B;--text-muted:#9597A6;
+  --border:#E5DDD4;--green:#4CAF50;--blue:#3B82C4;
+  --shadow-sm:0 2px 8px rgba(43,45,66,0.06);
+  --shadow-md:0 8px 24px rgba(43,45,66,0.08);
+  --radius:14px;--radius-sm:8px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text-primary);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+.brand-bar{position:sticky;top:0;z-index:50;background:var(--bg-card);border-bottom:1px solid var(--border);padding:.8rem 2rem;display:flex;justify-content:space-between;align-items:center;box-shadow:var(--shadow-sm)}
+.brand-name{font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--navy)}
+.brand-name span{color:var(--orange)}
+.brand-tag{font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;display:block;margin-top:2px}
+.brand-logo{width:46px;height:auto;display:block}
+
+.hero-section{padding:3.5rem 2rem 2rem;max-width:1100px;margin:0 auto}
+.lesson-pill{display:inline-flex;align-items:center;gap:.5rem;padding:.4rem 1rem;border-radius:50px;background:var(--orange-glow);color:var(--orange);font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem}
+.lesson-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);animation:pulseDot 2s infinite}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+h1.lesson-title{font-family:'DM Serif Display',serif;font-size:clamp(2.1rem,4.5vw,3.2rem);line-height:1.13;color:var(--navy);margin-bottom:.9rem;max-width:780px}
+h1.lesson-title em{font-style:normal;color:var(--orange)}
+.lesson-sub{font-size:1.02rem;color:var(--text-secondary);line-height:1.7;max-width:660px}
+
+.container{max-width:1100px;margin:0 auto;padding:2rem}
+.section-card{background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow-sm);margin-bottom:1.8rem;overflow:hidden;transition:box-shadow .3s}
+.section-card:hover{box-shadow:var(--shadow-md)}
+.section-top{height:5px;background:linear-gradient(90deg,var(--orange),var(--orange-light))}
+.section-body{padding:2rem 2rem 1.8rem}
+.section-num{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.7rem;font-weight:700;letter-spacing:.1em;color:var(--orange);background:var(--orange-glow);padding:.3rem .65rem;border-radius:6px;margin-bottom:.7rem}
+.section-card h2{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--navy);margin-bottom:.4rem;line-height:1.25}
+.section-card .deck{font-size:.85rem;color:var(--orange);font-weight:600;font-style:italic;margin-bottom:.9rem}
+.section-card .body{font-size:.95rem;color:var(--text-secondary);line-height:1.7;margin-bottom:1.4rem;max-width:760px}
+.section-card .body strong{color:var(--navy);font-weight:700}
+.section-card .body code{font-family:'JetBrains Mono',monospace;font-size:.85rem;background:var(--bg-light);padding:.1rem .4rem;border-radius:4px;color:var(--orange-dark)}
+
+.stage{background:var(--bg-light);border:1px dashed var(--border);border-radius:var(--radius-sm);padding:1.5rem 1rem;margin-bottom:1rem;position:relative;overflow:hidden}
+.stage svg{width:100%;height:auto;display:block;max-height:400px}
+.stage-controls{display:flex;justify-content:space-between;align-items:center;margin-top:1rem;gap:1rem;flex-wrap:wrap}
+.step-label{font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.06em;color:var(--text-secondary);text-transform:uppercase;flex:1;min-width:200px}
+.step-label.active{color:var(--orange);font-weight:700}
+.btn-play{display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.2rem;border-radius:8px;background:var(--orange);color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:.8rem;font-weight:600;letter-spacing:.03em;transition:all .2s}
+.btn-play:hover{background:var(--orange-dark);transform:translateY(-1px);box-shadow:0 4px 16px rgba(232,122,46,0.3)}
+.btn-play:disabled{opacity:.5;cursor:not-allowed}
+
+.draw{stroke-dasharray:800;stroke-dashoffset:800}
+.draw.go{animation:draw 1s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.fade{opacity:0}
+.fade.go{animation:fade .55s ease forwards}
+@keyframes fade{to{opacity:1}}
+.pop{opacity:0;transform-origin:center;transform:scale(.4)}
+.pop.go{animation:pop .5s cubic-bezier(.34,1.56,.64,1) forwards}
+@keyframes pop{to{opacity:1;transform:scale(1)}}
+.bloom{transform-origin:center}
+.bloom.go{animation:bloom 1s ease infinite}
+@keyframes bloom{0%,100%{filter:drop-shadow(0 0 0 rgba(232,122,46,0))}50%{filter:drop-shadow(0 0 8px rgba(232,122,46,.6))}}
+
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}
+.chip{font-family:'JetBrains Mono',monospace;font-size:.72rem;padding:.4rem .75rem;background:var(--bg-light);border:1px solid var(--border);border-radius:50px;color:var(--text-secondary)}
+.chip b{color:var(--orange);font-weight:700}
+
+.code-block{background:#1A1B2E;color:#E5DDD4;font-family:'JetBrains Mono',monospace;padding:1.2rem 1.4rem;border-radius:var(--radius-sm);font-size:.78rem;line-height:1.7;margin-top:1rem;overflow-x:auto}
+.code-block .k{color:#E87A2E}
+.code-block .s{color:#7AC74F}
+.code-block .c{color:#9597A6;font-style:italic}
+.code-block .f{color:#7DCFFF}
+
+.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1rem}
+@media(max-width:760px){.feature-grid{grid-template-columns:1fr}}
+.feature-item{padding:1.2rem;background:var(--bg-light);border-radius:var(--radius-sm);border:1px solid var(--border);border-top:3px solid var(--orange)}
+.feature-icon{width:42px;height:42px;border-radius:10px;background:var(--orange-glow);display:flex;align-items:center;justify-content:center;margin-bottom:.7rem;font-size:1.4rem}
+.feature-item h4{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:.3rem}
+.feature-item p{font-size:.8rem;color:var(--text-secondary);line-height:1.6}
+
+footer{text-align:center;padding:2rem 1rem;color:var(--text-muted);font-size:.75rem;letter-spacing:.05em}
+footer b{font-family:'DM Serif Display',serif;color:var(--navy);font-weight:400}
+footer b span{color:var(--orange)}
+</style>
+</head>
+<body>
+
+<header class="brand-bar">
+  <div>
+    <div class="brand-name">Moksh<span>Path</span></div>
+    <div class="brand-tag">Lesson · Agents Track</div>
+  </div>
+  <img src="hero.svg" class="brand-logo" alt="MokshPath logo"/>
+</header>
+
+<section class="hero-section">
+  <div class="lesson-pill"><span class="dot"></span> Lesson 04 · LangGraph</div>
+  <h1 class="lesson-title">Welcome to <em>LangGraph</em></h1>
+  <p class="lesson-sub">LangChain agents are great until your workflow grows past "search → think → answer." LangGraph models an agent as an explicit <strong>graph of nodes</strong> sharing a single <strong>state</strong> — perfect for branching logic, retries, and human-in-the-loop pauses.</p>
+</section>
+
+<div class="container">
+
+  <!-- ────  SECTION 1: Stateful agents  ──── -->
+  <article class="section-card">
+    <div class="section-top"></div>
+    <div class="section-body">
+      <div class="section-num">PART 01</div>
+      <h2>Stateful agents — one shared notebook</h2>
+      <div class="deck">Every node reads and writes the same state</div>
+      <p class="body">In LangGraph, your agent is a <strong>graph</strong>: <strong>nodes</strong> are pieces of work (an LLM call, a tool, a parser), and they all share one Python dict called the <strong>state</strong>. A node reads what's there, does something, and writes back. The next node sees the update. Simple — but it changes everything.</p>
+
+      <div class="stage">
+        <svg viewBox="0 0 700 320" id="svg1">
+          <defs>
+            <marker id="arrG1" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#E87A2E"/></marker>
+          </defs>
+
+          <!-- central state -->
+          <g id="lg-state" class="pop">
+            <rect x="240" y="120" width="220" height="120" rx="14" fill="#fff" stroke="#E87A2E" stroke-width="2.5" stroke-dasharray="6 4"/>
+            <text x="350" y="145" text-anchor="middle" font-family="DM Serif Display" font-size="16" fill="#E87A2E">📓 STATE</text>
+            <text x="350" y="160" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">one shared dict</text>
+            <line x1="260" y1="170" x2="440" y2="170" stroke="#E5DDD4"/>
+            <text x="270" y="186" font-family="JetBrains Mono" font-size="10" fill="#2B2D42">messages: [ ... ]</text>
+            <text x="270" y="202" font-family="JetBrains Mono" font-size="10" fill="#2B2D42">query: "Tokyo flights"</text>
+            <text x="270" y="218" font-family="JetBrains Mono" font-size="10" fill="#2B2D42">results: [ ... ]</text>
+            <text x="270" y="234" font-family="JetBrains Mono" font-size="10" fill="#2B2D42">step: 3</text>
+          </g>
+
+          <!-- nodes around -->
+          <g id="lg-n1" class="pop">
+            <rect x="40" y="40" width="120" height="50" rx="8" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="100" y="62" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">Planner</text>
+            <text x="100" y="78" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">writes: plan</text>
+          </g>
+          <g id="lg-n2" class="pop">
+            <rect x="540" y="40" width="120" height="50" rx="8" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="600" y="62" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">Searcher</text>
+            <text x="600" y="78" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">writes: results</text>
+          </g>
+          <g id="lg-n3" class="pop">
+            <rect x="40" y="270" width="120" height="50" rx="8" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="100" y="292" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">Calculator</text>
+            <text x="100" y="308" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">writes: totals</text>
+          </g>
+          <g id="lg-n4" class="pop">
+            <rect x="540" y="270" width="120" height="50" rx="8" fill="#4CAF50" stroke="#2B2D42" stroke-width="2"/>
+            <text x="600" y="292" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#fff">Writer</text>
+            <text x="600" y="308" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#fff">writes: answer</text>
+          </g>
+
+          <!-- arrows two-way to state -->
+          <path id="lg-a1" class="draw" d="M160 70 Q 220 100 245 135" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrG1)"/>
+          <path id="lg-a2" class="draw" d="M540 70 Q 480 100 455 135" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrG1)"/>
+          <path id="lg-a3" class="draw" d="M160 290 Q 220 260 245 230" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrG1)"/>
+          <path id="lg-a4" class="draw" d="M540 290 Q 480 260 455 230" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrG1)"/>
+        </svg>
+        <div class="stage-controls">
+          <div class="step-label" id="s1-label">▶ Watch nodes share one piece of state</div>
+          <button class="btn-play" data-target="1">Play animation →</button>
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="k">from</span> langgraph.graph <span class="k">import</span> StateGraph
+<span class="k">from</span> typing <span class="k">import</span> TypedDict
+
+<span class="k">class</span> <span class="f">AgentState</span>(TypedDict):
+    query: str
+    results: list
+    answer: str
+
+graph = <span class="f">StateGraph</span>(AgentState)
+graph.add_node(<span class="s">"planner"</span>, planner_fn)
+graph.add_node(<span class="s">"searcher"</span>, searcher_fn)
+graph.add_node(<span class="s">"writer"</span>, writer_fn)
+      </div>
+    </div>
+  </article>
+
+  <!-- ────  SECTION 2: Conditional edges  ──── -->
+  <article class="section-card">
+    <div class="section-top"></div>
+    <div class="section-body">
+      <div class="section-num">PART 02</div>
+      <h2>Conditional edges — letting state choose the next step</h2>
+      <div class="deck">A function decides which arrow to follow</div>
+      <p class="body">In a regular graph, edges are fixed: node A always goes to B. In LangGraph you can add a <strong>conditional edge</strong> — a tiny Python function that reads the current state and returns the name of the next node. That's how an agent decides "do I have enough info, or should I search again?"</p>
+
+      <div class="stage">
+        <svg viewBox="0 0 700 300" id="svg2">
+          <defs>
+            <marker id="arrCE" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#E87A2E"/></marker>
+            <marker id="arrCG" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#4CAF50"/></marker>
+          </defs>
+
+          <!-- start -->
+          <g id="ce-start" class="pop">
+            <rect x="30" y="130" width="100" height="44" rx="8" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="80" y="158" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">START</text>
+          </g>
+
+          <!-- agent node -->
+          <g id="ce-agent" class="pop">
+            <rect x="190" y="120" width="130" height="64" rx="10" fill="#E87A2E" stroke="#2B2D42" stroke-width="2"/>
+            <text x="255" y="146" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#fff">Agent node</text>
+            <text x="255" y="164" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#fff">decides what to do</text>
+          </g>
+          <path id="ce-arr1" class="draw" d="M130 152 L188 152" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrCE)"/>
+
+          <!-- decision diamond -->
+          <g id="ce-cond" class="pop">
+            <polygon points="395,152 445,112 495,152 445,192" fill="#fff" stroke="#E87A2E" stroke-width="2"/>
+            <text x="445" y="148" text-anchor="middle" font-family="DM Serif Display" font-size="11" fill="#2B2D42">need</text>
+            <text x="445" y="162" text-anchor="middle" font-family="DM Serif Display" font-size="11" fill="#2B2D42">a tool?</text>
+          </g>
+          <path id="ce-arr2" class="draw" d="M320 152 L393 152" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrCE)"/>
+
+          <!-- yes branch -->
+          <g id="ce-tool" class="pop">
+            <rect x="540" y="55" width="130" height="50" rx="8" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="605" y="78" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">tool_node</text>
+            <text x="605" y="94" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">runs search / api</text>
+          </g>
+          <path id="ce-yes" class="draw" d="M480 130 Q 520 110 540 90" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrCE)"/>
+          <text id="ce-yes-l" class="fade" x="520" y="98" font-family="JetBrains Mono" font-size="10" fill="#E87A2E" font-weight="700">yes →</text>
+
+          <!-- loop back -->
+          <path id="ce-back" class="draw" d="M540 80 Q 280 30 255 116" stroke="#E87A2E" stroke-width="1.5" fill="none" stroke-dasharray="4 3" marker-end="url(#arrCE)"/>
+          <text id="ce-back-l" class="fade" x="400" y="30" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#E87A2E">loop back with new info</text>
+
+          <!-- no branch -->
+          <g id="ce-end" class="pop">
+            <rect x="540" y="195" width="130" height="50" rx="8" fill="#4CAF50" stroke="#2B2D42" stroke-width="2"/>
+            <text x="605" y="218" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#fff">END</text>
+            <text x="605" y="234" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#fff">final answer</text>
+          </g>
+          <path id="ce-no" class="draw" d="M480 175 Q 520 210 540 220" stroke="#4CAF50" stroke-width="2" fill="none" marker-end="url(#arrCG)"/>
+          <text id="ce-no-l" class="fade" x="520" y="218" font-family="JetBrains Mono" font-size="10" fill="#4CAF50" font-weight="700">no →</text>
+
+          <!-- caption -->
+          <text id="ce-caption" class="fade" x="350" y="280" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6B6D7B">↑ a Python function reads state, returns "tool_node" or "END"</text>
+        </svg>
+        <div class="stage-controls">
+          <div class="step-label" id="s2-label">▶ See state pick the path at runtime</div>
+          <button class="btn-play" data-target="2">Play animation →</button>
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="k">def</span> <span class="f">should_continue</span>(state: AgentState) -> str:
+    <span class="k">if</span> state[<span class="s">"messages"</span>][-1].tool_calls:
+        <span class="k">return</span> <span class="s">"tool_node"</span>     <span class="c"># needs a tool, go run one</span>
+    <span class="k">return</span> <span class="s">"END"</span>                <span class="c"># done, exit the graph</span>
+
+graph.add_conditional_edges(<span class="s">"agent"</span>, should_continue)
+      </div>
+
+      <div class="chips">
+        <span class="chip"><b>Branch:</b> "if cart_total &gt; 1000 → manager_node else → auto_approve"</span>
+        <span class="chip"><b>Retry:</b> "if error → retry_node (up to 3 times)"</span>
+        <span class="chip"><b>Loop:</b> "while not satisfied → keep thinking"</span>
+      </div>
+    </div>
+  </article>
+
+  <!-- ────  SECTION 3: HITL checkpoints  ──── -->
+  <article class="section-card">
+    <div class="section-top"></div>
+    <div class="section-body">
+      <div class="section-num">PART 03</div>
+      <h2>Human-in-the-Loop checkpoints</h2>
+      <div class="deck">Pause the graph, wait for a person, resume</div>
+      <p class="body">For high-stakes actions — sending money, deleting data, posting publicly — you don't want the agent to act alone. LangGraph's <strong>checkpointer</strong> can pause execution before sensitive nodes, save full state to disk, and wait. A human reviews, approves or edits, and the graph picks up exactly where it left off.</p>
+
+      <div class="stage">
+        <svg viewBox="0 0 700 340" id="svg3">
+          <defs>
+            <marker id="arrH" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#E87A2E"/></marker>
+            <marker id="arrHg" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#4CAF50"/></marker>
+            <marker id="arrHr" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#D54E4E"/></marker>
+          </defs>
+
+          <!-- node 1 -->
+          <g id="h-n1" class="pop">
+            <rect x="30" y="40" width="120" height="50" rx="8" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="90" y="62" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">Draft email</text>
+            <text x="90" y="78" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">agent writes it</text>
+          </g>
+          <!-- node 2 -->
+          <g id="h-n2" class="pop">
+            <rect x="210" y="40" width="160" height="50" rx="8" fill="#FEE7D7" stroke="#E87A2E" stroke-width="2.5"/>
+            <text x="290" y="60" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#E87A2E">⏸ checkpoint</text>
+            <text x="290" y="78" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#E87A2E">PAUSE · save state</text>
+          </g>
+          <!-- node 3 -->
+          <g id="h-n3" class="pop">
+            <rect x="430" y="40" width="130" height="50" rx="8" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="495" y="62" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">Send email</text>
+            <text x="495" y="78" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">irreversible!</text>
+          </g>
+
+          <path id="h-arr1" class="draw" d="M150 65 L208 65" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrH)"/>
+          <path id="h-arr2" class="draw" d="M370 65 L428 65" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrH)"/>
+
+          <!-- human reviewer below checkpoint -->
+          <g id="h-human" class="pop">
+            <circle cx="290" cy="180" r="38" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <circle cx="290" cy="170" r="10" fill="#2B2D42"/>
+            <path d="M270 198 Q 290 186 310 198" stroke="#2B2D42" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <text x="290" y="234" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6B6D7B">HUMAN REVIEWER</text>
+          </g>
+
+          <!-- state saved icon -->
+          <g id="h-state" class="pop">
+            <rect x="190" y="125" width="80" height="30" rx="6" fill="#F9F5F0" stroke="#2B2D42" stroke-width="1.5" stroke-dasharray="3 3"/>
+            <text x="230" y="145" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">💾 state saved</text>
+          </g>
+
+          <!-- approve/reject buttons -->
+          <g id="h-approve" class="pop">
+            <rect x="180" y="250" width="100" height="36" rx="18" fill="#4CAF50" stroke="#2B2D42" stroke-width="1.5"/>
+            <text x="230" y="272" text-anchor="middle" font-family="DM Serif Display" font-size="12" fill="#fff">✓ Approve</text>
+          </g>
+          <g id="h-edit" class="pop">
+            <rect x="300" y="250" width="120" height="36" rx="18" fill="#fff" stroke="#E87A2E" stroke-width="1.5"/>
+            <text x="360" y="272" text-anchor="middle" font-family="DM Serif Display" font-size="12" fill="#E87A2E">✎ Edit & resume</text>
+          </g>
+
+          <!-- approve path -->
+          <path id="h-app-arr" class="draw" d="M230 250 Q 230 220 235 215" stroke="#4CAF50" stroke-width="1.5" fill="none"/>
+          <path id="h-app-up" class="draw" d="M250 155 Q 280 100 280 95" stroke="#4CAF50" stroke-width="2" fill="none" stroke-dasharray="4 3" marker-end="url(#arrHg)"/>
+          <text id="h-app-l" class="fade" x="195" y="115" font-family="JetBrains Mono" font-size="9" fill="#4CAF50">resume →</text>
+
+          <!-- edit path: dashes back to draft -->
+          <path id="h-edit-arr" class="draw" d="M310 268 Q 100 200 90 95" stroke="#E87A2E" stroke-width="1.5" fill="none" stroke-dasharray="4 3" marker-end="url(#arrH)"/>
+          <text id="h-edit-l" class="fade" x="120" y="200" font-family="JetBrains Mono" font-size="9" fill="#E87A2E">tweak & retry</text>
+
+          <!-- caption -->
+          <text id="h-cap" class="fade" x="350" y="320" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6B6D7B">✓ days can pass between pause and resume — state is durable</text>
+        </svg>
+        <div class="stage-controls">
+          <div class="step-label" id="s3-label">▶ See an agent pause for human approval</div>
+          <button class="btn-play" data-target="3">Play animation →</button>
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="k">from</span> langgraph.checkpoint.memory <span class="k">import</span> MemorySaver
+
+checkpointer = <span class="f">MemorySaver</span>()
+app = graph.compile(checkpointer=checkpointer, interrupt_before=[<span class="s">"send_email"</span>])
+
+<span class="c"># run until the checkpoint, then pause</span>
+app.invoke(state, config={<span class="s">"configurable"</span>: {<span class="s">"thread_id"</span>: <span class="s">"user-42"</span>}})
+
+<span class="c"># later — human approves, resume from saved state</span>
+app.invoke(<span class="k">None</span>, config={<span class="s">"configurable"</span>: {<span class="s">"thread_id"</span>: <span class="s">"user-42"</span>}})
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-item">
+          <div class="feature-icon">⏸</div>
+          <h4>Pauses cleanly</h4>
+          <p>Stop before any node — the agent never half-executes a critical step.</p>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">💾</div>
+          <h4>Durable state</h4>
+          <p>State is serialized to disk (or DB), so pauses can last seconds or days.</p>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">✏️</div>
+          <h4>Editable</h4>
+          <p>Humans can tweak state mid-flow before resuming — not just approve/reject.</p>
+        </div>
+      </div>
+    </div>
+  </article>
+
+</div>
+
+<footer>
+  <b>Moksh<span>Path</span></b> · Lesson 04 — LangGraph · next up: Evaluating your agents
+</footer>
+
+<script>
+function runSeq(seq, labelEl, finalLabel){
+  let t = 0;
+  for(const [delay, id, cls, labelText] of seq){
+    t += delay;
+    setTimeout(()=>{
+      if(id){const el = document.getElementById(id); if(el) el.classList.add(cls || 'go');}
+      if(labelText && labelEl){labelEl.textContent = labelText; labelEl.classList.add('active');}
+    }, t);
+  }
+  if(finalLabel && labelEl){setTimeout(()=>{labelEl.textContent = finalLabel;}, t + 800);}
+  return t;
+}
+function resetSvg(svgId){
+  const svg = document.getElementById(svgId);
+  if(!svg) return;
+  svg.querySelectorAll('.go').forEach(el => el.classList.remove('go'));
+}
+
+const sequences = {
+  '1': {
+    svg:'svg1', label:document.getElementById('s1-label'),
+    final:'Every node reads and writes the same state.',
+    steps:[
+      [100,'lg-state','go','Step 1 · A shared state dict sits at the center'],
+      [800,'lg-n1','go','Step 2 · Planner node connects'],
+      [400,'lg-a1','go','…reads query, writes a plan'],
+      [400,'lg-n2','go','Step 3 · Searcher reads the plan'],
+      [400,'lg-a2','go','…and writes back search results'],
+      [400,'lg-n3','go','Step 4 · Calculator reads results'],
+      [400,'lg-a3','go','…writes computed totals'],
+      [400,'lg-n4','go','Step 5 · Writer reads everything'],
+      [400,'lg-a4','go','…and writes the final answer'],
+    ]
+  },
+  '2': {
+    svg:'svg2', label:document.getElementById('s2-label'),
+    final:'State picks the next node — yes → tool, no → end.',
+    steps:[
+      [100,'ce-start','go','Step 1 · Graph starts'],
+      [400,'ce-arr1','go',null],
+      [300,'ce-agent','go','Step 2 · Agent node runs and updates state'],
+      [400,'ce-arr2','go',null],
+      [300,'ce-cond','go','Step 3 · Conditional edge reads state'],
+      [600,'ce-yes','go','Path A · state says "tool_calls present"'],
+      [200,'ce-yes-l','go',null],
+      [300,'ce-tool','go','→ go to tool_node'],
+      [500,'ce-back','go','Step 4 · After tool, loop back to agent'],
+      [200,'ce-back-l','go',null],
+      [600,'ce-no','go','Path B · state says "no more tools needed"'],
+      [200,'ce-no-l','go',null],
+      [300,'ce-end','go','→ END the graph'],
+      [400,'ce-caption','go',null],
+    ]
+  },
+  '3': {
+    svg:'svg3', label:document.getElementById('s3-label'),
+    final:'Agent paused, human approved, graph resumed. Safely.',
+    steps:[
+      [100,'h-n1','go','Step 1 · Agent drafts an email'],
+      [500,'h-arr1','go',null],
+      [300,'h-n2','go','Step 2 · Hits a checkpoint before sending'],
+      [400,'h-state','go','State saved to disk — graph pauses'],
+      [500,'h-human','go','Step 3 · A human reviews what was drafted'],
+      [600,'h-approve','go','Option A · approve…'],
+      [200,'h-edit','go','…or edit & resume'],
+      [600,'h-app-arr','go','Step 4 · On approve, graph resumes'],
+      [500,'h-app-up','go',null],
+      [200,'h-app-l','go',null],
+      [400,'h-arr2','go','Step 5 · Send email node finally runs'],
+      [400,'h-n3','go',null],
+      [500,'h-edit-arr','go','(Alternative: tweak state and retry from draft)'],
+      [200,'h-edit-l','go',null],
+      [400,'h-cap','go',null],
+    ]
+  },
+};
+
+document.querySelectorAll('.btn-play').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const target = btn.dataset.target;
+    const seq = sequences[target];
+    if(!seq) return;
+    resetSvg(seq.svg);
+    seq.label.classList.remove('active');
+    btn.disabled = true;
+    btn.textContent = 'Playing…';
+    const total = runSeq(seq.steps, seq.label, seq.final);
+    setTimeout(()=>{btn.disabled = false; btn.textContent = 'Replay animation →';}, total + 1200);
+  });
+});
+window.addEventListener('load', ()=>{
+  setTimeout(()=>{document.querySelector('.btn-play[data-target="1"]').click();}, 600);
+});
+</script>
+</body>
+</html>

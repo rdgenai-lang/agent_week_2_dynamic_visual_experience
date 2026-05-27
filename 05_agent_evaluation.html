@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lesson 5 · Agent Evaluation — MokshPath</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --orange:#E87A2E;--orange-dark:#D06A20;--orange-light:#F5943E;--orange-glow:rgba(232,122,46,0.12);
+  --navy:#2B2D42;--navy-dark:#1A1B2E;
+  --bg:#F3EDE7;--bg-card:#FFFFFF;--bg-light:#F9F5F0;
+  --text-primary:#2B2D42;--text-secondary:#6B6D7B;--text-muted:#9597A6;
+  --border:#E5DDD4;--green:#4CAF50;--blue:#3B82C4;--red:#D54E4E;
+  --shadow-sm:0 2px 8px rgba(43,45,66,0.06);
+  --shadow-md:0 8px 24px rgba(43,45,66,0.08);
+  --radius:14px;--radius-sm:8px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text-primary);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+.brand-bar{position:sticky;top:0;z-index:50;background:var(--bg-card);border-bottom:1px solid var(--border);padding:.8rem 2rem;display:flex;justify-content:space-between;align-items:center;box-shadow:var(--shadow-sm)}
+.brand-name{font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--navy)}
+.brand-name span{color:var(--orange)}
+.brand-tag{font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;display:block;margin-top:2px}
+.brand-logo{width:46px;height:auto;display:block}
+
+.hero-section{padding:3.5rem 2rem 2rem;max-width:1100px;margin:0 auto}
+.lesson-pill{display:inline-flex;align-items:center;gap:.5rem;padding:.4rem 1rem;border-radius:50px;background:var(--orange-glow);color:var(--orange);font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem}
+.lesson-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);animation:pulseDot 2s infinite}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+h1.lesson-title{font-family:'DM Serif Display',serif;font-size:clamp(2.1rem,4.5vw,3.2rem);line-height:1.13;color:var(--navy);margin-bottom:.9rem;max-width:780px}
+h1.lesson-title em{font-style:normal;color:var(--orange)}
+.lesson-sub{font-size:1.02rem;color:var(--text-secondary);line-height:1.7;max-width:660px}
+
+.container{max-width:1100px;margin:0 auto;padding:2rem}
+.section-card{background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow-sm);margin-bottom:1.8rem;overflow:hidden;transition:box-shadow .3s}
+.section-card:hover{box-shadow:var(--shadow-md)}
+.section-top{height:5px;background:linear-gradient(90deg,var(--orange),var(--orange-light))}
+.section-body{padding:2rem 2rem 1.8rem}
+.section-num{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.7rem;font-weight:700;letter-spacing:.1em;color:var(--orange);background:var(--orange-glow);padding:.3rem .65rem;border-radius:6px;margin-bottom:.7rem}
+.section-card h2{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--navy);margin-bottom:.4rem;line-height:1.25}
+.section-card .deck{font-size:.85rem;color:var(--orange);font-weight:600;font-style:italic;margin-bottom:.9rem}
+.section-card .body{font-size:.95rem;color:var(--text-secondary);line-height:1.7;margin-bottom:1.4rem;max-width:760px}
+.section-card .body strong{color:var(--navy);font-weight:700}
+.section-card .body code{font-family:'JetBrains Mono',monospace;font-size:.85rem;background:var(--bg-light);padding:.1rem .4rem;border-radius:4px;color:var(--orange-dark)}
+
+.stage{background:var(--bg-light);border:1px dashed var(--border);border-radius:var(--radius-sm);padding:1.5rem 1rem;margin-bottom:1rem;position:relative;overflow:hidden}
+.stage svg{width:100%;height:auto;display:block;max-height:420px}
+.stage-controls{display:flex;justify-content:space-between;align-items:center;margin-top:1rem;gap:1rem;flex-wrap:wrap}
+.step-label{font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.06em;color:var(--text-secondary);text-transform:uppercase;flex:1;min-width:200px}
+.step-label.active{color:var(--orange);font-weight:700}
+.btn-play{display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.2rem;border-radius:8px;background:var(--orange);color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:.8rem;font-weight:600;letter-spacing:.03em;transition:all .2s}
+.btn-play:hover{background:var(--orange-dark);transform:translateY(-1px);box-shadow:0 4px 16px rgba(232,122,46,0.3)}
+.btn-play:disabled{opacity:.5;cursor:not-allowed}
+
+.draw{stroke-dasharray:800;stroke-dashoffset:800}
+.draw.go{animation:draw 1s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.fade{opacity:0}
+.fade.go{animation:fade .55s ease forwards}
+@keyframes fade{to{opacity:1}}
+.pop{opacity:0;transform-origin:center;transform:scale(.4)}
+.pop.go{animation:pop .5s cubic-bezier(.34,1.56,.64,1) forwards}
+@keyframes pop{to{opacity:1;transform:scale(1)}}
+.grow{transform:scaleY(0);transform-origin:bottom}
+.grow.go{animation:grow .9s cubic-bezier(.25,.46,.45,.94) forwards}
+@keyframes grow{to{transform:scaleY(1)}}
+.slideR{opacity:0;transform:translateX(-20px)}
+.slideR.go{animation:slideR .55s ease forwards}
+@keyframes slideR{to{opacity:1;transform:translateX(0)}}
+
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}
+.chip{font-family:'JetBrains Mono',monospace;font-size:.72rem;padding:.4rem .75rem;background:var(--bg-light);border:1px solid var(--border);border-radius:50px;color:var(--text-secondary)}
+.chip b{color:var(--orange);font-weight:700}
+
+.code-block{background:#1A1B2E;color:#E5DDD4;font-family:'JetBrains Mono',monospace;padding:1.2rem 1.4rem;border-radius:var(--radius-sm);font-size:.78rem;line-height:1.7;margin-top:1rem;overflow-x:auto}
+.code-block .k{color:#E87A2E}
+.code-block .s{color:#7AC74F}
+.code-block .c{color:#9597A6;font-style:italic}
+.code-block .f{color:#7DCFFF}
+
+.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;margin-top:1rem}
+@media(max-width:760px){.metric-grid{grid-template-columns:repeat(2,1fr)}}
+.metric{background:var(--bg-light);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;text-align:center}
+.metric-val{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--orange);line-height:1.1}
+.metric-lbl{font-family:'JetBrains Mono',monospace;font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-top:.3rem}
+
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem}
+@media(max-width:680px){.compare{grid-template-columns:1fr}}
+.compare-card{background:var(--bg-light);border-radius:var(--radius-sm);border:1px solid var(--border);padding:1.2rem;border-top:3px solid var(--red)}
+.compare-card.good{border-top-color:var(--green)}
+.compare-card .tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.65rem;letter-spacing:.08em;padding:.25rem .6rem;border-radius:4px;background:var(--red);color:#fff;margin-bottom:.6rem}
+.compare-card.good .tag{background:var(--green)}
+.compare-card h3{font-family:'DM Serif Display',serif;font-size:1.1rem;color:var(--navy);margin-bottom:.4rem}
+.compare-card ul{list-style:none;font-size:.85rem;line-height:1.7;color:var(--text-secondary)}
+.compare-card li{padding-left:1.2rem;position:relative;margin-bottom:.3rem}
+.compare-card li::before{content:"→";position:absolute;left:0;color:var(--orange);font-weight:700}
+
+footer{text-align:center;padding:2rem 1rem;color:var(--text-muted);font-size:.75rem;letter-spacing:.05em}
+footer b{font-family:'DM Serif Display',serif;color:var(--navy);font-weight:400}
+footer b span{color:var(--orange)}
+</style>
+</head>
+<body>
+
+<header class="brand-bar">
+  <div>
+    <div class="brand-name">Moksh<span>Path</span></div>
+    <div class="brand-tag">Lesson · Agents Track</div>
+  </div>
+  <img src="hero.svg" class="brand-logo" alt="MokshPath logo"/>
+</header>
+
+<section class="hero-section">
+  <div class="lesson-pill"><span class="dot"></span> Lesson 05 · Evaluation</div>
+  <h1 class="lesson-title">Evaluating your <em>agents</em></h1>
+  <p class="lesson-sub">An agent that works once isn't done — it has to keep working after every prompt tweak, model swap, and new tool. Let's see how to measure <strong>did it succeed</strong>, <strong>how efficiently</strong>, <strong>how fast</strong>, and how to wire all of it into your GitHub repo.</p>
+</section>
+
+<div class="container">
+
+  <!-- ────  SECTION 1: Why evaluate  ──── -->
+  <article class="section-card">
+    <div class="section-top"></div>
+    <div class="section-body">
+      <div class="section-num">PART 01</div>
+      <h2>Why agents need evaluation</h2>
+      <div class="deck">Non-deterministic = "works on my machine" doesn't mean anything</div>
+      <p class="body">Unlike regular code, an LLM can give a <em>different answer to the same input</em>. Tweak one word in the prompt and behaviour shifts in ways you can't predict. The only way to know if today's agent is better than yesterday's is to run a <strong>fixed set of tests</strong> on both and compare the scores.</p>
+
+      <div class="stage">
+        <svg viewBox="0 0 700 300" id="svg1">
+          <defs>
+            <marker id="arrE" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#E87A2E"/></marker>
+          </defs>
+
+          <!-- same input -->
+          <g id="e-in" class="pop">
+            <rect x="30" y="125" width="120" height="50" rx="8" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="90" y="148" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">Same input</text>
+            <text x="90" y="164" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">"Plan my trip"</text>
+          </g>
+
+          <!-- agent -->
+          <g id="e-ag" class="pop">
+            <circle cx="240" cy="150" r="42" fill="#E87A2E" stroke="#2B2D42" stroke-width="2"/>
+            <text x="240" y="148" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#fff">Agent</text>
+            <text x="240" y="164" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#fff">v1.2</text>
+          </g>
+          <path id="e-a1" class="draw" d="M150 150 L198 150" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrE)"/>
+
+          <!-- 3 different outputs -->
+          <g id="e-o1" class="slideR">
+            <rect x="360" y="40" width="280" height="46" rx="8" fill="#fff" stroke="#2B2D42" stroke-width="1.5"/>
+            <text x="380" y="58" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">RUN 1</text>
+            <text x="380" y="76" font-family="DM Serif Display" font-size="12" fill="#2B2D42">"Flight on Mon · ₹42,000 · ANA Air"</text>
+          </g>
+          <g id="e-o2" class="slideR">
+            <rect x="360" y="100" width="280" height="46" rx="8" fill="#fff" stroke="#2B2D42" stroke-width="1.5"/>
+            <text x="380" y="118" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">RUN 2</text>
+            <text x="380" y="136" font-family="DM Serif Display" font-size="12" fill="#2B2D42">"Flight on Tue · ₹38,500 · Vistara"</text>
+          </g>
+          <g id="e-o3" class="slideR">
+            <rect x="360" y="160" width="280" height="46" rx="8" fill="#fff" stroke="#D54E4E" stroke-width="1.5"/>
+            <text x="380" y="178" font-family="JetBrains Mono" font-size="9" fill="#D54E4E">RUN 3 ⚠</text>
+            <text x="380" y="196" font-family="DM Serif Display" font-size="12" fill="#2B2D42">"I couldn't find any flights."</text>
+          </g>
+
+          <path id="e-a2" class="draw" d="M282 135 Q 320 90 358 65" stroke="#E87A2E" stroke-width="1.5" fill="none" marker-end="url(#arrE)"/>
+          <path id="e-a3" class="draw" d="M282 150 Q 320 130 358 125" stroke="#E87A2E" stroke-width="1.5" fill="none" marker-end="url(#arrE)"/>
+          <path id="e-a4" class="draw" d="M282 165 Q 320 180 358 185" stroke="#E87A2E" stroke-width="1.5" fill="none" marker-end="url(#arrE)"/>
+
+          <!-- caption -->
+          <g id="e-cap" class="pop">
+            <rect x="100" y="230" width="500" height="50" rx="10" fill="#FEE7D7" stroke="#E87A2E" stroke-width="1.5"/>
+            <text x="350" y="252" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#E87A2E">Without eval, we can't tell if v1.3 is an improvement or a regression.</text>
+            <text x="350" y="270" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6B6D7B">3 runs of the same input · 3 different outputs · 1 silent failure</text>
+          </g>
+        </svg>
+        <div class="stage-controls">
+          <div class="step-label" id="s1-label">▶ See why agents need measurement, not gut feel</div>
+          <button class="btn-play" data-target="1">Play animation →</button>
+        </div>
+      </div>
+
+      <div class="chips">
+        <span class="chip"><b>Without eval:</b> "it felt better"</span>
+        <span class="chip"><b>With eval:</b> "v1.3 scores 87% vs 82% — ship it"</span>
+        <span class="chip"><b>Bonus:</b> catches regressions before users do</span>
+      </div>
+    </div>
+  </article>
+
+  <!-- ────  SECTION 2: Task completion  ──── -->
+  <article class="section-card">
+    <div class="section-top"></div>
+    <div class="section-body">
+      <div class="section-num">PART 02</div>
+      <h2>Task completion — did it actually work?</h2>
+      <div class="deck">Golden test set + LLM-as-judge = pass rate</div>
+      <p class="body">Build a <strong>golden dataset</strong>: a list of inputs paired with the right answer (or rubric). Run your agent on each input, then ask a stronger LLM to <strong>grade</strong> whether the agent's output matches. The fraction it gets right is your <strong>pass rate</strong> — your single most important number.</p>
+
+      <div class="stage">
+        <svg viewBox="0 0 700 320" id="svg2">
+          <defs>
+            <marker id="arrJ" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#E87A2E"/></marker>
+            <marker id="arrJg" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#4CAF50"/></marker>
+            <marker id="arrJr" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#D54E4E"/></marker>
+          </defs>
+
+          <!-- golden dataset -->
+          <g id="tc-ds" class="pop">
+            <rect x="30" y="30" width="180" height="160" rx="10" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="120" y="52" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">📋 Golden dataset</text>
+            <line x1="50" y1="62" x2="190" y2="62" stroke="#E5DDD4"/>
+            <text x="50" y="80" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">in: "weather in Kolkata?"</text>
+            <text x="50" y="92" font-family="JetBrains Mono" font-size="9" fill="#4CAF50">ok: "27°C, humid"</text>
+            <text x="50" y="112" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">in: "what's 23 × 47?"</text>
+            <text x="50" y="124" font-family="JetBrains Mono" font-size="9" fill="#4CAF50">ok: "1081"</text>
+            <text x="50" y="144" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">in: "summarise PDF"</text>
+            <text x="50" y="156" font-family="JetBrains Mono" font-size="9" fill="#4CAF50">ok: rubric ✓</text>
+            <text x="50" y="176" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">… 47 more cases …</text>
+          </g>
+
+          <!-- agent -->
+          <g id="tc-ag" class="pop">
+            <circle cx="320" cy="110" r="40" fill="#E87A2E" stroke="#2B2D42" stroke-width="2"/>
+            <text x="320" y="108" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#fff">Agent</text>
+            <text x="320" y="124" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#fff">under test</text>
+          </g>
+          <path id="tc-a1" class="draw" d="M212 110 L278 110" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrJ)"/>
+
+          <!-- agent output -->
+          <g id="tc-out" class="pop">
+            <rect x="410" y="80" width="160" height="60" rx="8" fill="#F9F5F0" stroke="#2B2D42" stroke-width="1.5"/>
+            <text x="490" y="100" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">AGENT'S ANSWER</text>
+            <text x="490" y="118" text-anchor="middle" font-family="DM Serif Display" font-size="11" fill="#2B2D42">"Around 27 degrees,</text>
+            <text x="490" y="132" text-anchor="middle" font-family="DM Serif Display" font-size="11" fill="#2B2D42">quite humid today"</text>
+          </g>
+          <path id="tc-a2" class="draw" d="M362 110 L408 110" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrJ)"/>
+
+          <!-- judge LLM -->
+          <g id="tc-judge" class="pop">
+            <rect x="320" y="200" width="200" height="60" rx="12" fill="#fff" stroke="#E87A2E" stroke-width="2.5"/>
+            <text x="420" y="222" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#E87A2E">⚖ Judge LLM</text>
+            <text x="420" y="240" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">compares output vs expected</text>
+            <text x="420" y="252" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">returns: PASS / FAIL + reason</text>
+          </g>
+          <path id="tc-a3" class="draw" d="M490 145 L450 198" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrJ)"/>
+          <path id="tc-a4" class="draw" d="M120 200 L320 220" stroke="#E87A2E" stroke-width="1.5" fill="none" stroke-dasharray="3 3" marker-end="url(#arrJ)"/>
+          <text id="tc-a4-l" class="fade" x="200" y="218" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">expected answer</text>
+
+          <!-- pass rate result -->
+          <g id="tc-rate" class="pop">
+            <rect x="580" y="200" width="100" height="60" rx="12" fill="#4CAF50" stroke="#2B2D42" stroke-width="2"/>
+            <text x="630" y="220" text-anchor="middle" font-family="DM Serif Display" font-size="22" fill="#fff">87%</text>
+            <text x="630" y="238" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#fff">pass rate</text>
+            <text x="630" y="250" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#fff">43/50 cases</text>
+          </g>
+          <path id="tc-a5" class="draw" d="M522 230 L578 230" stroke="#4CAF50" stroke-width="2" fill="none" marker-end="url(#arrJg)"/>
+
+          <!-- caption -->
+          <text id="tc-cap" class="fade" x="350" y="300" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6B6D7B">run on every PR → catch regressions before they ship</text>
+        </svg>
+        <div class="stage-controls">
+          <div class="step-label" id="s2-label">▶ Watch one test case go through the judge</div>
+          <button class="btn-play" data-target="2">Play animation →</button>
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="k">from</span> langsmith.evaluation <span class="k">import</span> evaluate
+<span class="k">from</span> langchain.evaluation <span class="k">import</span> load_evaluator
+
+judge = <span class="f">load_evaluator</span>(<span class="s">"labeled_score_string"</span>, llm=stronger_llm)
+
+results = <span class="f">evaluate</span>(
+    my_agent,
+    data=<span class="s">"golden-dataset-v1"</span>,
+    evaluators=[judge],
+)
+<span class="f">print</span>(results.aggregate_results)   <span class="c"># → {pass_rate: 0.87, ...}</span>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric"><div class="metric-val">50</div><div class="metric-lbl">test cases</div></div>
+        <div class="metric"><div class="metric-val">43</div><div class="metric-lbl">passed</div></div>
+        <div class="metric"><div class="metric-val">7</div><div class="metric-lbl">failed</div></div>
+        <div class="metric"><div class="metric-val">87%</div><div class="metric-lbl">pass rate</div></div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ────  SECTION 3: Tool-call efficiency  ──── -->
+  <article class="section-card">
+    <div class="section-top"></div>
+    <div class="section-body">
+      <div class="section-num">PART 03</div>
+      <h2>Tool-call efficiency</h2>
+      <div class="deck">Same answer in 2 tool calls beats the same answer in 9</div>
+      <p class="body">Two agents can both <em>get the right answer</em> but one spends 9 tool calls wandering while the other does it in 2. Each call costs tokens, time, and rate limits. Track <strong>tool calls per task</strong>, <strong>redundant calls</strong> (same args twice), and <strong>wrong tool picks</strong> — efficiency is a first-class metric.</p>
+
+      <div class="stage">
+        <svg viewBox="0 0 700 340" id="svg3">
+          <defs>
+            <marker id="arrT" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#E87A2E"/></marker>
+            <marker id="arrTg" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#4CAF50"/></marker>
+            <marker id="arrTr" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#D54E4E"/></marker>
+          </defs>
+
+          <!-- WASTEFUL agent -->
+          <text x="160" y="28" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#D54E4E" font-weight="700" letter-spacing="2">WASTEFUL AGENT</text>
+          <g id="w-ag" class="pop">
+            <circle cx="60" cy="100" r="28" fill="#D54E4E" stroke="#2B2D42" stroke-width="2"/>
+            <text x="60" y="105" text-anchor="middle" font-family="DM Serif Display" font-size="12" fill="#fff">v1</text>
+          </g>
+          <g id="w-1" class="pop"><rect x="120" y="50" width="100" height="20" rx="10" fill="#fff" stroke="#2B2D42" stroke-width="1"/><text x="170" y="64" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">search("Tokyo")</text></g>
+          <g id="w-2" class="pop"><rect x="120" y="76" width="100" height="20" rx="10" fill="#fff" stroke="#2B2D42" stroke-width="1"/><text x="170" y="90" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">search("Tokyo")</text></g>
+          <text id="w-2l" class="fade" x="230" y="90" font-family="JetBrains Mono" font-size="9" fill="#D54E4E">↩ dup</text>
+          <g id="w-3" class="pop"><rect x="120" y="102" width="100" height="20" rx="10" fill="#fff" stroke="#2B2D42" stroke-width="1"/><text x="170" y="116" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">python.run(…)</text></g>
+          <g id="w-4" class="pop"><rect x="120" y="128" width="100" height="20" rx="10" fill="#fff" stroke="#D54E4E" stroke-width="1.5"/><text x="170" y="142" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">search("Japan")</text></g>
+          <text id="w-4l" class="fade" x="240" y="142" font-family="JetBrains Mono" font-size="9" fill="#D54E4E">↩ wrong tool</text>
+          <g id="w-5" class="pop"><rect x="120" y="154" width="100" height="20" rx="10" fill="#fff" stroke="#2B2D42" stroke-width="1"/><text x="170" y="168" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">search("flight")</text></g>
+          <g id="w-6" class="pop"><rect x="120" y="180" width="100" height="20" rx="10" fill="#fff" stroke="#2B2D42" stroke-width="1"/><text x="170" y="194" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">search("flight")</text></g>
+          <text id="w-6l" class="fade" x="230" y="194" font-family="JetBrains Mono" font-size="9" fill="#D54E4E">↩ dup</text>
+          <g id="w-dots" class="pop"><rect x="120" y="206" width="100" height="20" rx="10" fill="#fff" stroke="#2B2D42" stroke-width="1" stroke-dasharray="3 2"/><text x="170" y="220" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">… 3 more …</text></g>
+
+          <g id="w-tot" class="pop">
+            <rect x="40" y="245" width="240" height="60" rx="10" fill="#FCE6E6" stroke="#D54E4E" stroke-width="2"/>
+            <text x="160" y="266" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#D54E4E">9 tool calls</text>
+            <text x="160" y="284" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">2 duplicates · 1 wrong tool</text>
+            <text x="160" y="298" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">cost: ~$0.18 · latency: 14s</text>
+          </g>
+
+          <!-- divider -->
+          <line x1="350" y1="40" x2="350" y2="310" stroke="#2B2D42" stroke-width="1" stroke-dasharray="3 5" opacity=".3"/>
+
+          <!-- EFFICIENT agent -->
+          <text x="540" y="28" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#4CAF50" font-weight="700" letter-spacing="2">EFFICIENT AGENT</text>
+          <g id="g-ag" class="pop">
+            <circle cx="440" cy="100" r="28" fill="#4CAF50" stroke="#2B2D42" stroke-width="2"/>
+            <text x="440" y="105" text-anchor="middle" font-family="DM Serif Display" font-size="12" fill="#fff">v2</text>
+          </g>
+          <g id="g-1" class="pop"><rect x="500" y="76" width="160" height="22" rx="11" fill="#fff" stroke="#4CAF50" stroke-width="1.5"/><text x="580" y="91" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">search("Tokyo flights")</text></g>
+          <g id="g-2" class="pop"><rect x="500" y="106" width="160" height="22" rx="11" fill="#fff" stroke="#4CAF50" stroke-width="1.5"/><text x="580" y="121" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">python.run(prices)</text></g>
+
+          <g id="g-tot" class="pop">
+            <rect x="420" y="245" width="240" height="60" rx="10" fill="#D9EFD9" stroke="#4CAF50" stroke-width="2"/>
+            <text x="540" y="266" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#4CAF50">2 tool calls</text>
+            <text x="540" y="284" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">no dupes · right tool first try</text>
+            <text x="540" y="298" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">cost: ~$0.04 · latency: 3s</text>
+          </g>
+        </svg>
+        <div class="stage-controls">
+          <div class="step-label" id="s3-label">▶ Compare wasteful vs efficient on the same task</div>
+          <button class="btn-play" data-target="3">Play animation →</button>
+        </div>
+      </div>
+
+      <div class="chips">
+        <span class="chip"><b>Track:</b> total_tool_calls per task</span>
+        <span class="chip"><b>Track:</b> duplicate_calls (same name + same args)</span>
+        <span class="chip"><b>Track:</b> wrong_tool rate (tool didn't help)</span>
+        <span class="chip"><b>Fix:</b> sharpen tool docstrings · cache results</span>
+      </div>
+    </div>
+  </article>
+
+  <!-- ────  SECTION 4: Latency  ──── -->
+  <article class="section-card">
+    <div class="section-top"></div>
+    <div class="section-body">
+      <div class="section-num">PART 04</div>
+      <h2>Latency — how long users wait</h2>
+      <div class="deck">Don't average. Look at p50 and p95.</div>
+      <p class="body">Average response time hides the worst cases. <strong>p50</strong> (median) is what half your users see; <strong>p95</strong> is what the unluckiest 5% suffer. Break latency down <strong>per node</strong> — usually one slow node (long LLM call, slow API) is dragging the whole graph down.</p>
+
+      <div class="stage">
+        <svg viewBox="0 0 700 320" id="svg4">
+          <defs>
+            <marker id="arrL" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#E87A2E"/></marker>
+          </defs>
+
+          <!-- distribution bars (latency histogram) -->
+          <text x="40" y="30" font-family="JetBrains Mono" font-size="10" fill="#6B6D7B" letter-spacing="1">REQUEST LATENCY · 1000 RUNS</text>
+
+          <!-- axis -->
+          <line x1="40" y1="180" x2="380" y2="180" stroke="#2B2D42" stroke-width="1"/>
+          <line x1="40" y1="50" x2="40" y2="180" stroke="#2B2D42" stroke-width="1"/>
+
+          <!-- bars (10 bins) -->
+          <g id="l-bars">
+            <rect class="grow lat-bar" id="lb1" x="48" y="160" width="22" height="20" fill="#4CAF50"/>
+            <rect class="grow lat-bar" id="lb2" x="78" y="130" width="22" height="50" fill="#4CAF50"/>
+            <rect class="grow lat-bar" id="lb3" x="108" y="90" width="22" height="90" fill="#4CAF50"/>
+            <rect class="grow lat-bar" id="lb4" x="138" y="80" width="22" height="100" fill="#4CAF50"/>
+            <rect class="grow lat-bar" id="lb5" x="168" y="110" width="22" height="70" fill="#E87A2E"/>
+            <rect class="grow lat-bar" id="lb6" x="198" y="135" width="22" height="45" fill="#E87A2E"/>
+            <rect class="grow lat-bar" id="lb7" x="228" y="150" width="22" height="30" fill="#E87A2E"/>
+            <rect class="grow lat-bar" id="lb8" x="258" y="160" width="22" height="20" fill="#D54E4E"/>
+            <rect class="grow lat-bar" id="lb9" x="288" y="165" width="22" height="15" fill="#D54E4E"/>
+            <rect class="grow lat-bar" id="lb10" x="318" y="170" width="22" height="10" fill="#D54E4E"/>
+          </g>
+
+          <!-- p50 marker -->
+          <g id="l-p50" class="fade">
+            <line x1="155" y1="50" x2="155" y2="180" stroke="#2B2D42" stroke-width="1.5" stroke-dasharray="3 3"/>
+            <rect x="125" y="35" width="60" height="20" rx="10" fill="#2B2D42"/>
+            <text x="155" y="49" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#fff" font-weight="700">p50: 2.1s</text>
+          </g>
+          <!-- p95 marker -->
+          <g id="l-p95" class="fade">
+            <line x1="290" y1="50" x2="290" y2="180" stroke="#D54E4E" stroke-width="1.5" stroke-dasharray="3 3"/>
+            <rect x="260" y="35" width="60" height="20" rx="10" fill="#D54E4E"/>
+            <text x="290" y="49" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#fff" font-weight="700">p95: 8.7s</text>
+          </g>
+
+          <text x="40" y="200" font-family="JetBrains Mono" font-size="8" fill="#6B6D7B">0s</text>
+          <text x="380" y="200" font-family="JetBrains Mono" font-size="8" fill="#6B6D7B" text-anchor="end">12s</text>
+
+          <!-- per-node breakdown on right -->
+          <text x="420" y="30" font-family="JetBrains Mono" font-size="10" fill="#6B6D7B" letter-spacing="1">BREAKDOWN BY NODE</text>
+
+          <g id="n-1" class="slideR">
+            <rect x="420" y="50" width="50" height="22" rx="3" fill="#4CAF50"/>
+            <rect x="470" y="50" width="200" height="22" rx="3" fill="#F9F5F0" stroke="#E5DDD4"/>
+            <text x="420" y="44" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">parse_input</text>
+            <text x="675" y="65" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B" text-anchor="end">0.2s</text>
+          </g>
+          <g id="n-2" class="slideR">
+            <rect x="420" y="90" width="180" height="22" rx="3" fill="#D54E4E"/>
+            <rect x="600" y="90" width="70" height="22" rx="3" fill="#F9F5F0" stroke="#E5DDD4"/>
+            <text x="420" y="84" font-family="JetBrains Mono" font-size="9" fill="#D54E4E" font-weight="700">⚠ llm_call</text>
+            <text x="675" y="105" font-family="JetBrains Mono" font-size="9" fill="#D54E4E" text-anchor="end" font-weight="700">5.4s</text>
+          </g>
+          <g id="n-3" class="slideR">
+            <rect x="420" y="130" width="90" height="22" rx="3" fill="#E87A2E"/>
+            <rect x="510" y="130" width="160" height="22" rx="3" fill="#F9F5F0" stroke="#E5DDD4"/>
+            <text x="420" y="124" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">tool_search</text>
+            <text x="675" y="145" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B" text-anchor="end">1.8s</text>
+          </g>
+          <g id="n-4" class="slideR">
+            <rect x="420" y="170" width="40" height="22" rx="3" fill="#4CAF50"/>
+            <rect x="460" y="170" width="210" height="22" rx="3" fill="#F9F5F0" stroke="#E5DDD4"/>
+            <text x="420" y="164" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">format_output</text>
+            <text x="675" y="185" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B" text-anchor="end">0.3s</text>
+          </g>
+
+          <g id="n-insight" class="pop">
+            <rect x="420" y="220" width="250" height="80" rx="10" fill="#FEE7D7" stroke="#E87A2E" stroke-width="1.5"/>
+            <text x="545" y="243" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#E87A2E">🔍 insight</text>
+            <text x="545" y="262" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">llm_call is 70% of total latency</text>
+            <text x="545" y="276" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">→ try smaller model · enable streaming</text>
+            <text x="545" y="290" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#2B2D42">→ parallelize where possible</text>
+          </g>
+        </svg>
+        <div class="stage-controls">
+          <div class="step-label" id="s4-label">▶ Watch p50/p95 reveal the slow node</div>
+          <button class="btn-play" data-target="4">Play animation →</button>
+        </div>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric"><div class="metric-val">2.1s</div><div class="metric-lbl">p50 latency</div></div>
+        <div class="metric"><div class="metric-val">8.7s</div><div class="metric-lbl">p95 latency</div></div>
+        <div class="metric"><div class="metric-val">7.7s</div><div class="metric-lbl">total · 1 run</div></div>
+        <div class="metric"><div class="metric-val">70%</div><div class="metric-lbl">spent in llm_call</div></div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ────  SECTION 5: GitHub structuring  ──── -->
+  <article class="section-card">
+    <div class="section-top"></div>
+    <div class="section-body">
+      <div class="section-num">PART 05</div>
+      <h2>Structuring it in GitHub</h2>
+      <div class="deck">Repo layout · evals as CI · dataset versioning</div>
+      <p class="body">Don't keep evals in a notebook. Put your agent, tools, datasets, and eval scripts inside one repo with a clean folder layout. Then wire <strong>GitHub Actions</strong> to run evals on every PR — the metrics get posted as a comment, so reviewers see <em>before/after</em> pass rate, latency, and tool-call count without leaving GitHub.</p>
+
+      <div class="stage">
+        <svg viewBox="0 0 700 400" id="svg5">
+          <defs>
+            <marker id="arrG" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#E87A2E"/></marker>
+          </defs>
+
+          <!-- file tree on the left -->
+          <g id="gh-tree" class="pop">
+            <rect x="20" y="30" width="270" height="320" rx="10" fill="#1A1B2E" stroke="#2B2D42" stroke-width="1"/>
+            <text x="155" y="52" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#9597A6">📁 my-agent-project/</text>
+            <line x1="40" y1="62" x2="270" y2="62" stroke="#3a3c52"/>
+          </g>
+
+          <g id="gh-r1" class="slideR"><text x="40" y="82" font-family="JetBrains Mono" font-size="11" fill="#E87A2E">├ agents/</text></g>
+          <g id="gh-r2" class="slideR"><text x="55" y="100" font-family="JetBrains Mono" font-size="10" fill="#E5DDD4">│  └ travel_agent.py</text></g>
+          <g id="gh-r3" class="slideR"><text x="40" y="120" font-family="JetBrains Mono" font-size="11" fill="#E87A2E">├ tools/</text></g>
+          <g id="gh-r4" class="slideR"><text x="55" y="138" font-family="JetBrains Mono" font-size="10" fill="#E5DDD4">│  ├ flight_search.py</text></g>
+          <g id="gh-r5" class="slideR"><text x="55" y="156" font-family="JetBrains Mono" font-size="10" fill="#E5DDD4">│  └ calendar.py</text></g>
+          <g id="gh-r6" class="slideR"><text x="40" y="178" font-family="JetBrains Mono" font-size="11" fill="#E87A2E">├ evals/</text></g>
+          <g id="gh-r7" class="slideR"><text x="55" y="196" font-family="JetBrains Mono" font-size="10" fill="#7AC74F">│  ├ datasets/</text></g>
+          <g id="gh-r8" class="slideR"><text x="70" y="214" font-family="JetBrains Mono" font-size="10" fill="#E5DDD4">│  │  └ golden_v1.jsonl</text></g>
+          <g id="gh-r9" class="slideR"><text x="55" y="232" font-family="JetBrains Mono" font-size="10" fill="#7AC74F">│  ├ judges/</text></g>
+          <g id="gh-r10" class="slideR"><text x="70" y="250" font-family="JetBrains Mono" font-size="10" fill="#E5DDD4">│  │  └ task_completion.py</text></g>
+          <g id="gh-r11" class="slideR"><text x="55" y="268" font-family="JetBrains Mono" font-size="10" fill="#E5DDD4">│  └ run.py</text></g>
+          <g id="gh-r12" class="slideR"><text x="40" y="290" font-family="JetBrains Mono" font-size="11" fill="#E87A2E">├ .github/</text></g>
+          <g id="gh-r13" class="slideR"><text x="55" y="308" font-family="JetBrains Mono" font-size="10" fill="#E5DDD4">│  └ workflows/</text></g>
+          <g id="gh-r14" class="slideR"><text x="70" y="326" font-family="JetBrains Mono" font-size="10" fill="#7DCFFF">│     └ eval.yml ⚙</text></g>
+          <g id="gh-r15" class="slideR"><text x="40" y="344" font-family="JetBrains Mono" font-size="11" fill="#E5DDD4">└ README.md</text></g>
+
+          <!-- workflow on the right -->
+          <g id="gh-pr" class="pop">
+            <rect x="330" y="40" width="350" height="64" rx="10" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <circle cx="356" cy="72" r="10" fill="#7C3AED"/>
+            <text x="356" y="76" text-anchor="middle" font-family="DM Serif Display" font-size="12" fill="#fff">PR</text>
+            <text x="380" y="64" font-family="DM Serif Display" font-size="13" fill="#2B2D42">PR #42 · "swap to claude-haiku-4.5"</text>
+            <text x="380" y="80" font-family="JetBrains Mono" font-size="10" fill="#6B6D7B">opened by @asha · branch: faster-model</text>
+            <text x="380" y="94" font-family="JetBrains Mono" font-size="9" fill="#4CAF50">✓ tests · ⚙ running evals…</text>
+          </g>
+
+          <path id="gh-arr1" class="draw" d="M460 110 L460 138" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrG)"/>
+          <text id="gh-arr1l" class="fade" x="500" y="128" font-family="JetBrains Mono" font-size="9" fill="#E87A2E">eval.yml fires</text>
+
+          <g id="gh-ci" class="pop">
+            <rect x="330" y="145" width="350" height="80" rx="10" fill="#F9F5F0" stroke="#E87A2E" stroke-width="2" stroke-dasharray="4 3"/>
+            <text x="505" y="166" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#E87A2E">⚙ GitHub Action · evals/run.py</text>
+            <text x="505" y="184" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">runs 50 golden cases · judge grades · collects metrics</text>
+            <text x="505" y="200" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">posts results back to PR as a comment</text>
+            <text x="505" y="216" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">~3 min · cached datasets · parallel runs</text>
+          </g>
+
+          <path id="gh-arr2" class="draw" d="M460 230 L460 252" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrG)"/>
+
+          <!-- PR comment with metrics -->
+          <g id="gh-result" class="pop">
+            <rect x="330" y="260" width="350" height="120" rx="10" fill="#fff" stroke="#4CAF50" stroke-width="2"/>
+            <text x="345" y="282" font-family="DM Serif Display" font-size="13" fill="#4CAF50">📊 Eval report · main vs faster-model</text>
+            <line x1="345" y1="288" x2="665" y2="288" stroke="#E5DDD4"/>
+            <text x="345" y="306" font-family="JetBrains Mono" font-size="10" fill="#2B2D42">pass rate    87% → <tspan fill="#4CAF50" font-weight="700">89%</tspan>  ✓ +2pp</text>
+            <text x="345" y="324" font-family="JetBrains Mono" font-size="10" fill="#2B2D42">p95 latency  8.7s → <tspan fill="#4CAF50" font-weight="700">3.2s</tspan> ✓ −5.5s</text>
+            <text x="345" y="342" font-family="JetBrains Mono" font-size="10" fill="#2B2D42">tool calls   3.4 → <tspan fill="#D54E4E" font-weight="700">4.1</tspan>  ⚠ +0.7</text>
+            <text x="345" y="360" font-family="JetBrains Mono" font-size="10" fill="#2B2D42">cost/run     $0.18 → <tspan fill="#4CAF50" font-weight="700">$0.06</tspan> ✓ −67%</text>
+            <text x="345" y="374" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">→ recommend: ✓ ship · investigate tool count</text>
+          </g>
+        </svg>
+        <div class="stage-controls">
+          <div class="step-label" id="s5-label">▶ See evals run automatically on a PR</div>
+          <button class="btn-play" data-target="5">Play animation →</button>
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="c"># .github/workflows/eval.yml — runs on every PR</span>
+<span class="k">name</span>: agent-evals
+<span class="k">on</span>: [pull_request]
+<span class="k">jobs</span>:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -r requirements.txt
+      - run: python evals/run.py --dataset evals/datasets/golden_v1.jsonl
+      - uses: actions/github-script@v7   <span class="c"># post metrics back to PR</span>
+        with:
+          script: |
+            github.rest.issues.createComment({ ...require(<span class="s">'./evals/report.js'</span>) })
+      </div>
+
+      <div class="compare">
+        <div class="compare-card good">
+          <span class="tag">DO</span>
+          <h3>Good repo hygiene</h3>
+          <ul>
+            <li>Version your dataset (<code>golden_v1.jsonl</code>, <code>v2</code>…)</li>
+            <li>Eval script is just <code>python evals/run.py</code></li>
+            <li>Block merges if pass rate drops &gt;3pp</li>
+            <li>Cache LLM responses in CI to save cost</li>
+            <li>Store agent traces — debug failures by replay</li>
+          </ul>
+        </div>
+        <div class="compare-card">
+          <span class="tag">AVOID</span>
+          <h3>Common traps</h3>
+          <ul>
+            <li>Evals only in someone's notebook</li>
+            <li>Editing the dataset to make tests pass</li>
+            <li>One metric only — track 3+ at minimum</li>
+            <li>No baseline — always compare to <code>main</code></li>
+            <li>Forgetting cost — pass rate ≠ "good agent"</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </article>
+
+</div>
+
+<footer>
+  <b>Moksh<span>Path</span></b> · Lesson 05 — Agent Evaluation · end of series · 🙏
+</footer>
+
+<script>
+function runSeq(seq, labelEl, finalLabel){
+  let t = 0;
+  for(const [delay, id, cls, labelText] of seq){
+    t += delay;
+    setTimeout(()=>{
+      if(id){const el = document.getElementById(id); if(el) el.classList.add(cls || 'go');}
+      if(labelText && labelEl){labelEl.textContent = labelText; labelEl.classList.add('active');}
+    }, t);
+  }
+  if(finalLabel && labelEl){setTimeout(()=>{labelEl.textContent = finalLabel;}, t + 800);}
+  return t;
+}
+function resetSvg(svgId){
+  const svg = document.getElementById(svgId);
+  if(!svg) return;
+  svg.querySelectorAll('.go').forEach(el => el.classList.remove('go'));
+}
+
+const sequences = {
+  '1': {
+    svg:'svg1', label:document.getElementById('s1-label'),
+    final:'Same agent, same input — three different outcomes.',
+    steps:[
+      [100,'e-in','go','Step 1 · One fixed input'],
+      [400,'e-a1','go',null],
+      [300,'e-ag','go','Step 2 · Run it through the agent…'],
+      [500,'e-a2','go','Run 1 · one answer'],
+      [200,'e-o1','go',null],
+      [400,'e-a3','go','Run 2 · slightly different answer'],
+      [200,'e-o2','go',null],
+      [400,'e-a4','go','Run 3 · silent failure!'],
+      [200,'e-o3','go',null],
+      [500,'e-cap','go','→ we need objective measurement'],
+    ]
+  },
+  '2': {
+    svg:'svg2', label:document.getElementById('s2-label'),
+    final:'Judge LLM grades each case · pass rate falls out.',
+    steps:[
+      [100,'tc-ds','go','Step 1 · Curated golden dataset'],
+      [600,'tc-a1','go','Step 2 · Feed each input to the agent…'],
+      [300,'tc-ag','go',null],
+      [400,'tc-a2','go','Step 3 · Capture the agent\'s output'],
+      [300,'tc-out','go',null],
+      [500,'tc-a3','go','Step 4 · Send output AND expected answer'],
+      [300,'tc-a4','go',null],
+      [200,'tc-a4-l','go',null],
+      [300,'tc-judge','go','Step 5 · A judge LLM compares them'],
+      [600,'tc-a5','go','Step 6 · Aggregate → pass rate'],
+      [300,'tc-rate','go',null],
+      [400,'tc-cap','go',null],
+    ]
+  },
+  '3': {
+    svg:'svg3', label:document.getElementById('s3-label'),
+    final:'Both got the answer — efficient agent used 4x fewer calls.',
+    steps:[
+      [100,'w-ag','go','Wasteful agent · same task'],
+      [300,'w-1','go','Call 1 · search Tokyo'],
+      [250,'w-2','go','Call 2 · duplicate'],
+      [150,'w-2l','go',null],
+      [200,'w-3','go','Call 3 · python'],
+      [250,'w-4','go','Call 4 · wrong tool'],
+      [150,'w-4l','go',null],
+      [200,'w-5','go','Call 5 · search again'],
+      [200,'w-6','go','Call 6 · duplicate'],
+      [150,'w-6l','go',null],
+      [200,'w-dots','go','… and 3 more'],
+      [400,'w-tot','go','Total · 9 tool calls · $0.18 · 14s'],
+      [600,'g-ag','go','Efficient agent · same task'],
+      [400,'g-1','go','Call 1 · search Tokyo flights (precise)'],
+      [400,'g-2','go','Call 2 · python compute'],
+      [400,'g-tot','go','Total · 2 tool calls · $0.04 · 3s'],
+    ]
+  },
+  '4': {
+    svg:'svg4', label:document.getElementById('s4-label'),
+    final:'p95 catches the slow tail; per-node finds the cause.',
+    steps:[
+      [100,'lb1','go','Step 1 · Plot the latency distribution'],
+      [80,'lb2','go',null],
+      [80,'lb3','go',null],
+      [80,'lb4','go',null],
+      [80,'lb5','go',null],
+      [80,'lb6','go',null],
+      [80,'lb7','go',null],
+      [80,'lb8','go',null],
+      [80,'lb9','go',null],
+      [80,'lb10','go',null],
+      [500,'l-p50','go','Step 2 · p50 — median user experience'],
+      [600,'l-p95','go','Step 3 · p95 — the slow tail'],
+      [700,'n-1','go','Step 4 · Break it down by node'],
+      [300,'n-2','go','⚠ llm_call dominates'],
+      [300,'n-3','go',null],
+      [300,'n-4','go',null],
+      [500,'n-insight','go','Step 5 · Now you know where to optimize'],
+    ]
+  },
+  '5': {
+    svg:'svg5', label:document.getElementById('s5-label'),
+    final:'Every PR gets a metric report — no eyeballing changes.',
+    steps:[
+      [100,'gh-tree','go','Step 1 · Clean repo layout'],
+      [300,'gh-r1','go',null],
+      [100,'gh-r2','go',null],
+      [100,'gh-r3','go',null],
+      [100,'gh-r4','go',null],
+      [100,'gh-r5','go',null],
+      [150,'gh-r6','go','Step 2 · Evals folder holds dataset + judges + runner'],
+      [100,'gh-r7','go',null],
+      [100,'gh-r8','go',null],
+      [100,'gh-r9','go',null],
+      [100,'gh-r10','go',null],
+      [100,'gh-r11','go',null],
+      [150,'gh-r12','go','Step 3 · GitHub Action wires it all in'],
+      [100,'gh-r13','go',null],
+      [100,'gh-r14','go',null],
+      [100,'gh-r15','go',null],
+      [500,'gh-pr','go','Step 4 · Someone opens a PR'],
+      [500,'gh-arr1','go',null],
+      [200,'gh-arr1l','go',null],
+      [400,'gh-ci','go','Step 5 · CI runs the eval suite'],
+      [600,'gh-arr2','go',null],
+      [400,'gh-result','go','Step 6 · Metrics posted back to the PR'],
+    ]
+  },
+};
+
+document.querySelectorAll('.btn-play').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const target = btn.dataset.target;
+    const seq = sequences[target];
+    if(!seq) return;
+    resetSvg(seq.svg);
+    seq.label.classList.remove('active');
+    btn.disabled = true;
+    btn.textContent = 'Playing…';
+    const total = runSeq(seq.steps, seq.label, seq.final);
+    setTimeout(()=>{btn.disabled = false; btn.textContent = 'Replay animation →';}, total + 1200);
+  });
+});
+window.addEventListener('load', ()=>{
+  setTimeout(()=>{document.querySelector('.btn-play[data-target="1"]').click();}, 600);
+});
+</script>
+</body>
+</html>

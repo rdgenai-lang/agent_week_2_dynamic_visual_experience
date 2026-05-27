@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lesson 2 · LangChain Agents — MokshPath</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --orange:#E87A2E;--orange-dark:#D06A20;--orange-light:#F5943E;--orange-glow:rgba(232,122,46,0.12);
+  --navy:#2B2D42;--navy-dark:#1A1B2E;
+  --bg:#F3EDE7;--bg-card:#FFFFFF;--bg-light:#F9F5F0;
+  --text-primary:#2B2D42;--text-secondary:#6B6D7B;--text-muted:#9597A6;
+  --border:#E5DDD4;--green:#4CAF50;--blue:#3B82C4;
+  --shadow-sm:0 2px 8px rgba(43,45,66,0.06);
+  --shadow-md:0 8px 24px rgba(43,45,66,0.08);
+  --radius:14px;--radius-sm:8px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text-primary);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+.brand-bar{position:sticky;top:0;z-index:50;background:var(--bg-card);border-bottom:1px solid var(--border);padding:.8rem 2rem;display:flex;justify-content:space-between;align-items:center;box-shadow:var(--shadow-sm)}
+.brand-name{font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--navy)}
+.brand-name span{color:var(--orange)}
+.brand-tag{font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;display:block;margin-top:2px}
+.brand-logo{width:46px;height:auto;display:block}
+
+.hero-section{padding:3.5rem 2rem 2rem;max-width:1100px;margin:0 auto}
+.lesson-pill{display:inline-flex;align-items:center;gap:.5rem;padding:.4rem 1rem;border-radius:50px;background:var(--orange-glow);color:var(--orange);font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem}
+.lesson-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);animation:pulseDot 2s infinite}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+h1.lesson-title{font-family:'DM Serif Display',serif;font-size:clamp(2.1rem,4.5vw,3.2rem);line-height:1.13;color:var(--navy);margin-bottom:.9rem;max-width:780px}
+h1.lesson-title em{font-style:normal;color:var(--orange)}
+.lesson-sub{font-size:1.02rem;color:var(--text-secondary);line-height:1.7;max-width:660px}
+
+.container{max-width:1100px;margin:0 auto;padding:2rem}
+.section-card{background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow-sm);margin-bottom:1.8rem;overflow:hidden;transition:box-shadow .3s}
+.section-card:hover{box-shadow:var(--shadow-md)}
+.section-top{height:5px;background:linear-gradient(90deg,var(--orange),var(--orange-light))}
+.section-body{padding:2rem 2rem 1.8rem}
+.section-num{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.7rem;font-weight:700;letter-spacing:.1em;color:var(--orange);background:var(--orange-glow);padding:.3rem .65rem;border-radius:6px;margin-bottom:.7rem}
+.section-card h2{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--navy);margin-bottom:.4rem;line-height:1.25}
+.section-card .deck{font-size:.85rem;color:var(--orange);font-weight:600;font-style:italic;margin-bottom:.9rem}
+.section-card .body{font-size:.95rem;color:var(--text-secondary);line-height:1.7;margin-bottom:1.4rem;max-width:760px}
+.section-card .body strong{color:var(--navy);font-weight:700}
+.section-card .body code{font-family:'JetBrains Mono',monospace;font-size:.85rem;background:var(--bg-light);padding:.1rem .4rem;border-radius:4px;color:var(--orange-dark)}
+
+.stage{background:var(--bg-light);border:1px dashed var(--border);border-radius:var(--radius-sm);padding:1.5rem 1rem;margin-bottom:1rem;position:relative;overflow:hidden}
+.stage svg{width:100%;height:auto;display:block;max-height:400px}
+.stage-controls{display:flex;justify-content:space-between;align-items:center;margin-top:1rem;gap:1rem;flex-wrap:wrap}
+.step-label{font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.06em;color:var(--text-secondary);text-transform:uppercase;flex:1;min-width:200px}
+.step-label.active{color:var(--orange);font-weight:700}
+.btn-play{display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.2rem;border-radius:8px;background:var(--orange);color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:.8rem;font-weight:600;letter-spacing:.03em;transition:all .2s}
+.btn-play:hover{background:var(--orange-dark);transform:translateY(-1px);box-shadow:0 4px 16px rgba(232,122,46,0.3)}
+.btn-play:disabled{opacity:.5;cursor:not-allowed}
+
+.draw{stroke-dasharray:800;stroke-dashoffset:800}
+.draw.go{animation:draw 1s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.fade{opacity:0}
+.fade.go{animation:fade .55s ease forwards}
+@keyframes fade{to{opacity:1}}
+.pop{opacity:0;transform-origin:center;transform:scale(.4)}
+.pop.go{animation:pop .5s cubic-bezier(.34,1.56,.64,1) forwards}
+@keyframes pop{to{opacity:1;transform:scale(1)}}
+.flyR{opacity:0;transform:translateX(-30px)}
+.flyR.go{animation:flyR .6s ease forwards}
+@keyframes flyR{to{opacity:1;transform:translateX(0)}}
+
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}
+.chip{font-family:'JetBrains Mono',monospace;font-size:.72rem;padding:.4rem .75rem;background:var(--bg-light);border:1px solid var(--border);border-radius:50px;color:var(--text-secondary)}
+.chip b{color:var(--orange);font-weight:700}
+
+.code-block{
+  background:#1A1B2E;color:#E5DDD4;font-family:'JetBrains Mono',monospace;
+  padding:1.2rem 1.4rem;border-radius:var(--radius-sm);font-size:.78rem;line-height:1.7;
+  margin-top:1rem;overflow-x:auto;
+}
+.code-block .k{color:#E87A2E}
+.code-block .s{color:#7AC74F}
+.code-block .c{color:#9597A6;font-style:italic}
+.code-block .f{color:#7DCFFF}
+
+.tool-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1rem}
+@media(max-width:760px){.tool-grid{grid-template-columns:1fr}}
+.tool-item{padding:1.2rem;background:var(--bg-light);border-radius:var(--radius-sm);border:1px solid var(--border);border-top:3px solid var(--orange)}
+.tool-icon{width:42px;height:42px;border-radius:10px;background:var(--orange-glow);display:flex;align-items:center;justify-content:center;margin-bottom:.7rem;font-size:1.4rem}
+.tool-item h4{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:.3rem}
+.tool-item p{font-size:.8rem;color:var(--text-secondary);line-height:1.6}
+.tool-item .ex{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--orange-dark);margin-top:.5rem;display:block}
+
+footer{text-align:center;padding:2rem 1rem;color:var(--text-muted);font-size:.75rem;letter-spacing:.05em}
+footer b{font-family:'DM Serif Display',serif;color:var(--navy);font-weight:400}
+footer b span{color:var(--orange)}
+</style>
+</head>
+<body>
+
+<header class="brand-bar">
+  <div>
+    <div class="brand-name">Moksh<span>Path</span></div>
+    <div class="brand-tag">Lesson · Agents Track</div>
+  </div>
+  <img src="hero.svg" class="brand-logo" alt="MokshPath logo"/>
+</header>
+
+<section class="hero-section">
+  <div class="lesson-pill"><span class="dot"></span> Lesson 02 · LangChain Agents</div>
+  <h1 class="lesson-title">Building agents with <em>LangChain</em></h1>
+  <p class="lesson-sub">LangChain hands you a ready-made cockpit: the <strong>Agent Executor</strong> drives the ReAct loop while <strong>tools</strong> do the actual work. Let's wire one up step by step — a search tool, a Python tool, and one of your own.</p>
+</section>
+
+<div class="container">
+
+  <!-- ────  SECTION 1: Agent Executor  ──── -->
+  <article class="section-card">
+    <div class="section-top"></div>
+    <div class="section-body">
+      <div class="section-num">PART 01</div>
+      <h2>The Agent Executor — your cockpit</h2>
+      <div class="deck">Manages the loop so you don't have to</div>
+      <p class="body">In LangChain, you don't hand-roll the ReAct loop. The <strong>Agent Executor</strong> is a wrapper that holds three things: an <code>LLM</code>, a <code>list of tools</code>, and a <code>prompt</code>. It calls the LLM, parses the tool request, runs the tool, feeds the result back — and repeats until the LLM says "done".</p>
+
+      <div class="stage">
+        <svg viewBox="0 0 700 320" id="svg1">
+          <defs>
+            <marker id="arr1" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#E87A2E"/></marker>
+            <marker id="arr1n" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#2B2D42"/></marker>
+          </defs>
+
+          <!-- big executor box -->
+          <g id="ex-box" class="pop">
+            <rect x="140" y="40" width="420" height="240" rx="14" fill="#fff" stroke="#E87A2E" stroke-width="2.5" stroke-dasharray="6 4"/>
+            <text x="350" y="68" text-anchor="middle" font-family="DM Serif Display" font-size="18" fill="#E87A2E">AgentExecutor</text>
+            <text x="350" y="84" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">runs the ReAct loop for you</text>
+          </g>
+
+          <!-- LLM inside -->
+          <g id="ex-llm" class="pop">
+            <rect x="180" y="110" width="120" height="60" rx="8" fill="#F9F5F0" stroke="#2B2D42" stroke-width="2"/>
+            <text x="240" y="135" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#2B2D42">LLM</text>
+            <text x="240" y="152" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">picks the action</text>
+          </g>
+
+          <!-- Tools inside -->
+          <g id="ex-tools" class="pop">
+            <rect x="400" y="110" width="140" height="60" rx="8" fill="#F9F5F0" stroke="#2B2D42" stroke-width="2"/>
+            <text x="470" y="135" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#2B2D42">Tools</text>
+            <text x="470" y="152" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">search · python · custom</text>
+          </g>
+
+          <!-- Prompt inside -->
+          <g id="ex-prompt" class="pop">
+            <rect x="270" y="200" width="160" height="50" rx="8" fill="#F9F5F0" stroke="#2B2D42" stroke-width="2"/>
+            <text x="350" y="222" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">Prompt template</text>
+            <text x="350" y="238" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">"you are a helpful agent…"</text>
+          </g>
+
+          <!-- internal arrows between LLM ↔ Tools -->
+          <path id="ex-l2t" class="draw" d="M300 135 L398 135" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arr1)"/>
+          <path id="ex-t2l" class="draw" d="M398 150 L302 150" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arr1)"/>
+
+          <!-- user in -->
+          <g id="ex-user" class="fade">
+            <circle cx="60" cy="160" r="28" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <circle cx="60" cy="152" r="8" fill="#2B2D42"/>
+            <path d="M46 174 Q60 165 74 174" stroke="#2B2D42" stroke-width="2" fill="none"/>
+            <text x="60" y="208" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6B6D7B">USER</text>
+          </g>
+          <path id="ex-in" class="draw" d="M90 160 L138 160" stroke="#2B2D42" stroke-width="2" fill="none" marker-end="url(#arr1n)"/>
+
+          <!-- answer out -->
+          <g id="ex-out" class="pop">
+            <rect x="600" y="135" width="80" height="50" rx="8" fill="#4CAF50" stroke="#2B2D42" stroke-width="2"/>
+            <text x="640" y="160" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#fff">Answer</text>
+            <text x="640" y="174" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#fff">final</text>
+          </g>
+          <path id="ex-out-arr" class="draw" d="M562 160 L598 160" stroke="#4CAF50" stroke-width="2" fill="none" marker-end="url(#arr1)"/>
+        </svg>
+        <div class="stage-controls">
+          <div class="step-label" id="s1-label">▶ See the three pieces an Executor wires together</div>
+          <button class="btn-play" data-target="1">Play animation →</button>
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="c"># the executor binds it all together</span>
+<span class="k">from</span> langchain.agents <span class="k">import</span> AgentExecutor, create_react_agent
+
+agent = create_react_agent(llm, tools, prompt)
+executor = <span class="f">AgentExecutor</span>(agent=agent, tools=tools, verbose=<span class="k">True</span>)
+
+executor.invoke({<span class="s">"input"</span>: <span class="s">"weather in Kolkata today?"</span>})
+      </div>
+    </div>
+  </article>
+
+  <!-- ────  SECTION 2: DuckDuckGo  ──── -->
+  <article class="section-card">
+    <div class="section-top"></div>
+    <div class="section-body">
+      <div class="section-num">PART 02</div>
+      <h2>Tool #1 — DuckDuckGo search</h2>
+      <div class="deck">Give the agent the internet, for free</div>
+      <p class="body">DuckDuckGo's search is one of the friendliest tools to start with — no API key, no signup. You import it, hand it to the agent, and the LLM gets a new ability: <em>"if I don't know, I can search."</em></p>
+
+      <div class="stage">
+        <svg viewBox="0 0 700 280" id="svg2">
+          <defs>
+            <marker id="arr2" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#E87A2E"/></marker>
+            <marker id="arr2g" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#4CAF50"/></marker>
+          </defs>
+
+          <!-- Agent -->
+          <g id="dd-agent" class="pop">
+            <circle cx="100" cy="140" r="44" fill="#E87A2E" stroke="#2B2D42" stroke-width="2"/>
+            <text x="100" y="138" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#fff">Agent</text>
+            <text x="100" y="154" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#fff">thinking…</text>
+          </g>
+
+          <!-- query bubble -->
+          <g id="dd-q" class="fade">
+            <rect x="180" y="60" width="200" height="40" rx="20" fill="#fff" stroke="#2B2D42" stroke-width="1.5"/>
+            <text x="280" y="84" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2B2D42">search("Tokyo flights")</text>
+          </g>
+          <path id="dd-arr1" class="draw" d="M145 130 Q 180 100 200 90" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arr2)"/>
+
+          <!-- DuckDuckGo box -->
+          <g id="dd-ddg" class="pop">
+            <rect x="400" y="100" width="180" height="90" rx="12" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <circle cx="430" cy="135" r="14" fill="#DE5833"/>
+            <text x="430" y="140" text-anchor="middle" font-family="DM Serif Display" font-size="16" fill="#fff">D</text>
+            <text x="500" y="135" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">DuckDuckGo</text>
+            <text x="500" y="150" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">search the web</text>
+            <text x="500" y="178" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#E87A2E">✓ no API key needed</text>
+          </g>
+          <path id="dd-arr2" class="draw" d="M380 90 Q 410 90 410 100" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arr2)"/>
+
+          <!-- results -->
+          <g id="dd-res" class="flyR">
+            <rect x="400" y="210" width="180" height="50" rx="8" fill="#F9F5F0" stroke="#2B2D42" stroke-width="1.5"/>
+            <text x="490" y="230" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">RESULTS</text>
+            <text x="490" y="248" text-anchor="middle" font-family="DM Serif Display" font-size="12" fill="#2B2D42">3 top links + snippets</text>
+          </g>
+          <path id="dd-arr3" class="draw" d="M490 195 L490 207" stroke="#4CAF50" stroke-width="2" fill="none" marker-end="url(#arr2g)"/>
+
+          <!-- back to agent -->
+          <path id="dd-arr4" class="draw" d="M395 235 Q 200 240 145 160" stroke="#4CAF50" stroke-width="2" fill="none" stroke-dasharray="4 3" marker-end="url(#arr2g)"/>
+          <text id="dd-arr4-l" class="fade" x="270" y="262" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#4CAF50">"observation" returned to agent</text>
+        </svg>
+        <div class="stage-controls">
+          <div class="step-label" id="s2-label">▶ Watch the agent call DuckDuckGo and read results</div>
+          <button class="btn-play" data-target="2">Play animation →</button>
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="k">from</span> langchain_community.tools <span class="k">import</span> DuckDuckGoSearchRun
+
+search = <span class="f">DuckDuckGoSearchRun</span>()
+tools = [search]   <span class="c"># the agent can now reach the web</span>
+      </div>
+    </div>
+  </article>
+
+  <!-- ────  SECTION 3: Python REPL  ──── -->
+  <article class="section-card">
+    <div class="section-top"></div>
+    <div class="section-body">
+      <div class="section-num">PART 03</div>
+      <h2>Tool #2 — Python REPL</h2>
+      <div class="deck">Hand the agent a calculator (a very smart one)</div>
+      <p class="body">LLMs are famously shaky at arithmetic and date math. The fix: don't ask them to <em>do</em> it — ask them to <em>write code that does it</em>. A Python REPL tool runs whatever code the agent generates and returns the printed output as an observation.</p>
+
+      <div class="stage">
+        <svg viewBox="0 0 700 280" id="svg3">
+          <defs>
+            <marker id="arr3" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#E87A2E"/></marker>
+            <marker id="arr3g" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#4CAF50"/></marker>
+          </defs>
+
+          <!-- agent -->
+          <g id="py-agent" class="pop">
+            <circle cx="90" cy="140" r="40" fill="#E87A2E" stroke="#2B2D42" stroke-width="2"/>
+            <text x="90" y="144" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#fff">Agent</text>
+          </g>
+
+          <!-- thought bubble -->
+          <g id="py-think" class="fade">
+            <rect x="160" y="30" width="270" height="50" rx="8" fill="#fff" stroke="#2B2D42" stroke-width="1.5"/>
+            <text x="295" y="50" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6B6D7B">THOUGHT</text>
+            <text x="295" y="68" text-anchor="middle" font-family="DM Serif Display" font-size="12" fill="#2B2D42">"I'll write code instead of guessing"</text>
+          </g>
+
+          <!-- code snippet sent -->
+          <g id="py-code" class="fade">
+            <rect x="160" y="100" width="270" height="68" rx="8" fill="#1A1B2E" stroke="#2B2D42" stroke-width="1.5"/>
+            <text x="295" y="120" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#9597A6">PYTHON CODE</text>
+            <text x="178" y="138" font-family="JetBrains Mono" font-size="11" fill="#7AC74F">from datetime import date, timedelta</text>
+            <text x="178" y="155" font-family="JetBrains Mono" font-size="11" fill="#7DCFFF">print(date.today() + timedelta(90))</text>
+          </g>
+          <path id="py-arr1" class="draw" d="M135 130 L156 130" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arr3)"/>
+
+          <!-- python interpreter -->
+          <g id="py-repl" class="pop">
+            <rect x="460" y="100" width="180" height="70" rx="12" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="487" y="135" font-family="DM Serif Display" font-size="20" fill="#3B82C4">🐍</text>
+            <text x="560" y="130" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">Python REPL</text>
+            <text x="560" y="148" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">runs the code · prints result</text>
+          </g>
+          <path id="py-arr2" class="draw" d="M432 132 L458 132" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arr3)"/>
+
+          <!-- result -->
+          <g id="py-res" class="pop">
+            <rect x="460" y="200" width="180" height="46" rx="8" fill="#4CAF50" stroke="#2B2D42" stroke-width="1.5"/>
+            <text x="550" y="220" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#fff">PRINTED OUTPUT</text>
+            <text x="550" y="236" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#fff">2026-08-16</text>
+          </g>
+          <path id="py-arr3" class="draw" d="M550 172 L550 198" stroke="#4CAF50" stroke-width="2" fill="none" marker-end="url(#arr3g)"/>
+
+          <!-- back to agent -->
+          <path id="py-arr4" class="draw" d="M455 224 Q 200 245 130 165" stroke="#4CAF50" stroke-width="2" fill="none" stroke-dasharray="4 3" marker-end="url(#arr3g)"/>
+        </svg>
+        <div class="stage-controls">
+          <div class="step-label" id="s3-label">▶ Watch the agent write code, run it, and read the result</div>
+          <button class="btn-play" data-target="3">Play animation →</button>
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="k">from</span> langchain_experimental.tools <span class="k">import</span> PythonREPLTool
+
+python_repl = <span class="f">PythonREPLTool</span>()
+tools = [search, python_repl]   <span class="c"># now agent can both search AND compute</span>
+      </div>
+
+      <div class="chips" style="margin-top:1rem">
+        <span class="chip"><b>⚠ warning:</b> REPL runs arbitrary code — never expose to untrusted users without sandboxing</span>
+      </div>
+    </div>
+  </article>
+
+  <!-- ────  SECTION 4: Custom Tool  ──── -->
+  <article class="section-card">
+    <div class="section-top"></div>
+    <div class="section-body">
+      <div class="section-num">PART 04</div>
+      <h2>Tool #3 — Write your own</h2>
+      <div class="deck">Any Python function + a good description = a tool</div>
+      <p class="body">The real superpower of LangChain agents is that <em>any</em> function you write can become a tool. Three things matter: a clear <strong>name</strong>, a precise <strong>docstring</strong> (the LLM reads it to decide when to use the tool), and well-typed <strong>arguments</strong>. The <code>@tool</code> decorator handles the rest.</p>
+
+      <div class="stage">
+        <svg viewBox="0 0 700 320" id="svg4">
+          <defs>
+            <marker id="arr4" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#E87A2E"/></marker>
+          </defs>
+
+          <!-- Step 1: plain python function -->
+          <g id="ct-fn" class="pop">
+            <rect x="40" y="40" width="200" height="100" rx="10" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="140" y="62" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6B6D7B">STEP 1 · plain function</text>
+            <text x="55" y="84" font-family="JetBrains Mono" font-size="11" fill="#E87A2E">def</text>
+            <text x="85" y="84" font-family="JetBrains Mono" font-size="11" fill="#7DCFFF">get_stock(sym):</text>
+            <text x="55" y="102" font-family="JetBrains Mono" font-size="11" fill="#9597A6">  """Live price of sym"""</text>
+            <text x="55" y="120" font-family="JetBrains Mono" font-size="11" fill="#2B2D42">  return api.get(sym)</text>
+          </g>
+
+          <!-- Step 2: decorator -->
+          <g id="ct-deco" class="pop">
+            <rect x="280" y="40" width="180" height="100" rx="10" fill="#F9F5F0" stroke="#E87A2E" stroke-width="2" stroke-dasharray="5 4"/>
+            <text x="370" y="62" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6B6D7B">STEP 2 · add @tool</text>
+            <text x="370" y="92" text-anchor="middle" font-family="DM Serif Display" font-size="20" fill="#E87A2E">@tool</text>
+            <text x="370" y="115" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6B6D7B">one line · that's it</text>
+          </g>
+          <path id="ct-arr1" class="draw" d="M245 90 L278 90" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arr4)"/>
+
+          <!-- Step 3: registered tool -->
+          <g id="ct-reg" class="pop">
+            <rect x="500" y="40" width="170" height="100" rx="10" fill="#fff" stroke="#4CAF50" stroke-width="2"/>
+            <text x="585" y="62" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6B6D7B">STEP 3 · LangChain tool</text>
+            <text x="585" y="90" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#2B2D42">get_stock</text>
+            <text x="585" y="108" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#4CAF50">✓ name · args · description</text>
+            <text x="585" y="124" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">visible to the LLM</text>
+          </g>
+          <path id="ct-arr2" class="draw" d="M462 90 L498 90" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arr4)"/>
+
+          <!-- agent with all 3 tools -->
+          <g id="ct-agent" class="pop">
+            <circle cx="120" cy="240" r="44" fill="#E87A2E" stroke="#2B2D42" stroke-width="2"/>
+            <text x="120" y="240" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#fff">Agent</text>
+            <text x="120" y="256" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#fff">+3 tools</text>
+          </g>
+
+          <!-- toolbelt -->
+          <g id="ct-belt" class="fade">
+            <rect x="220" y="210" width="430" height="60" rx="30" fill="#F9F5F0" stroke="#2B2D42" stroke-width="1.5" stroke-dasharray="3 3"/>
+            <text x="435" y="200" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6B6D7B">TOOLBELT</text>
+          </g>
+          <g id="ct-tool1" class="pop">
+            <rect x="240" y="222" width="120" height="36" rx="18" fill="#fff" stroke="#2B2D42" stroke-width="1.5"/>
+            <text x="300" y="244" text-anchor="middle" font-family="DM Serif Display" font-size="12" fill="#2B2D42">🔍 search</text>
+          </g>
+          <g id="ct-tool2" class="pop">
+            <rect x="375" y="222" width="120" height="36" rx="18" fill="#fff" stroke="#2B2D42" stroke-width="1.5"/>
+            <text x="435" y="244" text-anchor="middle" font-family="DM Serif Display" font-size="12" fill="#2B2D42">🐍 python</text>
+          </g>
+          <g id="ct-tool3" class="pop">
+            <rect x="510" y="222" width="130" height="36" rx="18" fill="#fff" stroke="#E87A2E" stroke-width="2"/>
+            <text x="575" y="244" text-anchor="middle" font-family="DM Serif Display" font-size="12" fill="#2B2D42">📈 get_stock</text>
+          </g>
+
+          <path id="ct-arr3" class="draw" d="M164 240 L220 240" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arr4)"/>
+        </svg>
+        <div class="stage-controls">
+          <div class="step-label" id="s4-label">▶ Turn any Python function into a tool the agent can use</div>
+          <button class="btn-play" data-target="4">Play animation →</button>
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="k">from</span> langchain.tools <span class="k">import</span> tool
+
+<span class="k">@tool</span>
+<span class="k">def</span> <span class="f">get_stock_price</span>(symbol: str) -> str:
+    <span class="s">"""Return the latest live price for a stock ticker, e.g. 'AAPL'."""</span>
+    <span class="k">return</span> yfinance.Ticker(symbol).info[<span class="s">"regularMarketPrice"</span>]
+
+tools = [search, python_repl, get_stock_price]
+executor = <span class="f">AgentExecutor</span>(agent=create_react_agent(llm, tools, prompt), tools=tools)
+      </div>
+
+      <div class="tool-grid">
+        <div class="tool-item">
+          <div class="tool-icon">📛</div>
+          <h4>Clear name</h4>
+          <p>The function name is what the LLM sees first. Pick verbs: <code>get_</code>, <code>search_</code>, <code>send_</code>.</p>
+          <span class="ex">get_stock_price ✓  · stk ✗</span>
+        </div>
+        <div class="tool-item">
+          <div class="tool-icon">📝</div>
+          <h4>Precise docstring</h4>
+          <p>The LLM reads this to decide <em>when</em> to call your tool. Say what it does and when to use it.</p>
+          <span class="ex">"Return live price for a stock ticker"</span>
+        </div>
+        <div class="tool-item">
+          <div class="tool-icon">🔠</div>
+          <h4>Typed arguments</h4>
+          <p>Annotate types — the LLM uses them to fill in the right kind of value.</p>
+          <span class="ex">symbol: str → "AAPL"</span>
+        </div>
+      </div>
+    </div>
+  </article>
+
+</div>
+
+<footer>
+  <b>Moksh<span>Path</span></b> · Lesson 02 — LangChain Agents · next up: Memory & Agentic RAG
+</footer>
+
+<script>
+function runSeq(seq, labelEl, finalLabel){
+  let t = 0;
+  for(const [delay, id, cls, labelText] of seq){
+    t += delay;
+    setTimeout(()=>{
+      if(id){const el = document.getElementById(id); if(el) el.classList.add(cls || 'go');}
+      if(labelText && labelEl){labelEl.textContent = labelText; labelEl.classList.add('active');}
+    }, t);
+  }
+  if(finalLabel && labelEl){setTimeout(()=>{labelEl.textContent = finalLabel;}, t + 800);}
+  return t;
+}
+function resetSvg(svgId){
+  const svg = document.getElementById(svgId);
+  if(!svg) return;
+  svg.querySelectorAll('.go').forEach(el => el.classList.remove('go'));
+}
+
+const sequences = {
+  '1': {
+    svg:'svg1', label:document.getElementById('s1-label'),
+    final:'Executor coordinates LLM + tools + prompt in a loop.',
+    steps:[
+      [100,'ex-user','go','Step 1 · A user request arrives'],
+      [500,'ex-in','go',null],
+      [400,'ex-box','go','Step 2 · The AgentExecutor takes over'],
+      [600,'ex-llm','go','Step 3 · It holds an LLM…'],
+      [400,'ex-tools','go','…a list of tools…'],
+      [400,'ex-prompt','go','…and a prompt template'],
+      [500,'ex-l2t','go','Step 4 · LLM picks a tool, sends args'],
+      [600,'ex-t2l','go','Step 5 · Tool returns result back to LLM'],
+      [500,'ex-out-arr','go','Step 6 · Final answer goes to the user'],
+      [300,'ex-out','go',null],
+    ]
+  },
+  '2': {
+    svg:'svg2', label:document.getElementById('s2-label'),
+    final:'DuckDuckGo gave the agent a window to the web.',
+    steps:[
+      [100,'dd-agent','go','Step 1 · Agent decides it needs current info'],
+      [500,'dd-q','go','Step 2 · Forms a search query'],
+      [400,'dd-arr1','go',null],
+      [400,'dd-ddg','go','Step 3 · Calls the DuckDuckGo tool'],
+      [400,'dd-arr2','go',null],
+      [700,'dd-res','go','Step 4 · DuckDuckGo returns top results'],
+      [300,'dd-arr3','go',null],
+      [400,'dd-arr4','go','Step 5 · Results flow back as an observation'],
+      [300,'dd-arr4-l','go',null],
+    ]
+  },
+  '3': {
+    svg:'svg3', label:document.getElementById('s3-label'),
+    final:'Code runs in REPL, exact answer comes back to agent.',
+    steps:[
+      [100,'py-agent','go','Step 1 · Agent gets a math/date question'],
+      [400,'py-think','go','Step 2 · Decides: "write code, don\'t guess"'],
+      [500,'py-code','go','Step 3 · Generates a Python snippet'],
+      [400,'py-arr1','go',null],
+      [200,'py-arr2','go',null],
+      [400,'py-repl','go','Step 4 · REPL executes the code'],
+      [600,'py-arr3','go',null],
+      [200,'py-res','go','Step 5 · Printed output captured'],
+      [500,'py-arr4','go','Step 6 · Returned to agent as observation'],
+    ]
+  },
+  '4': {
+    svg:'svg4', label:document.getElementById('s4-label'),
+    final:'Any function + @tool = a brand-new agent skill.',
+    steps:[
+      [100,'ct-fn','go','Step 1 · Start with any Python function'],
+      [600,'ct-arr1','go',null],
+      [400,'ct-deco','go','Step 2 · Add the @tool decorator'],
+      [600,'ct-arr2','go',null],
+      [400,'ct-reg','go','Step 3 · LangChain reads name + docstring'],
+      [600,'ct-agent','go','Step 4 · Pass tools into the agent'],
+      [400,'ct-arr3','go',null],
+      [300,'ct-belt','go','Step 5 · Toolbelt now has 3 abilities'],
+      [200,'ct-tool1','go',null],
+      [200,'ct-tool2','go',null],
+      [300,'ct-tool3','go','✓ your custom tool is live'],
+    ]
+  },
+};
+
+document.querySelectorAll('.btn-play').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const target = btn.dataset.target;
+    const seq = sequences[target];
+    if(!seq) return;
+    resetSvg(seq.svg);
+    seq.label.classList.remove('active');
+    btn.disabled = true;
+    btn.textContent = 'Playing…';
+    const total = runSeq(seq.steps, seq.label, seq.final);
+    setTimeout(()=>{btn.disabled = false; btn.textContent = 'Replay animation →';}, total + 1200);
+  });
+});
+window.addEventListener('load', ()=>{
+  setTimeout(()=>{document.querySelector('.btn-play[data-target="1"]').click();}, 600);
+});
+</script>
+</body>
+</html>

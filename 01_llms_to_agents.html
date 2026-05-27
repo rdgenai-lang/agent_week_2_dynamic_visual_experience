@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lesson 1 · From LLMs to Agents — MokshPath</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --orange:#E87A2E;--orange-dark:#D06A20;--orange-light:#F5943E;--orange-glow:rgba(232,122,46,0.12);
+  --navy:#2B2D42;--navy-dark:#1A1B2E;
+  --bg:#F3EDE7;--bg-card:#FFFFFF;--bg-light:#F9F5F0;
+  --text-primary:#2B2D42;--text-secondary:#6B6D7B;--text-muted:#9597A6;
+  --border:#E5DDD4;--green:#4CAF50;
+  --shadow-sm:0 2px 8px rgba(43,45,66,0.06);
+  --shadow-md:0 8px 24px rgba(43,45,66,0.08);
+  --shadow-lg:0 16px 48px rgba(43,45,66,0.12);
+  --radius:14px;--radius-sm:8px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text-primary);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+.brand-bar{
+  position:sticky;top:0;z-index:50;background:var(--bg-card);
+  border-bottom:1px solid var(--border);padding:.8rem 2rem;
+  display:flex;justify-content:space-between;align-items:center;box-shadow:var(--shadow-sm);
+}
+.brand-left{display:flex;align-items:center;gap:.8rem}
+.brand-name{font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--navy)}
+.brand-name span{color:var(--orange)}
+.brand-tag{font-size:.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;display:block;margin-top:2px}
+.brand-logo{width:46px;height:auto;display:block}
+
+.hero-section{padding:3.5rem 2rem 2rem;max-width:1100px;margin:0 auto}
+.lesson-pill{display:inline-flex;align-items:center;gap:.5rem;padding:.4rem 1rem;border-radius:50px;background:var(--orange-glow);color:var(--orange);font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem}
+.lesson-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);animation:pulseDot 2s infinite}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+h1.lesson-title{font-family:'DM Serif Display',serif;font-size:clamp(2.1rem,4.5vw,3.2rem);line-height:1.13;color:var(--navy);margin-bottom:.9rem;max-width:780px}
+h1.lesson-title em{font-style:normal;color:var(--orange)}
+.lesson-sub{font-size:1.02rem;color:var(--text-secondary);line-height:1.7;max-width:660px}
+
+.container{max-width:1100px;margin:0 auto;padding:2rem}
+.section-card{
+  background:var(--bg-card);border-radius:var(--radius);
+  border:1px solid var(--border);box-shadow:var(--shadow-sm);
+  margin-bottom:1.8rem;overflow:hidden;
+  transition:box-shadow .3s,transform .3s;
+}
+.section-card:hover{box-shadow:var(--shadow-md)}
+.section-top{height:5px;background:linear-gradient(90deg,var(--orange),var(--orange-light))}
+.section-body{padding:2rem 2rem 1.8rem}
+.section-num{
+  display:inline-block;font-family:'JetBrains Mono',monospace;
+  font-size:.7rem;font-weight:700;letter-spacing:.1em;color:var(--orange);
+  background:var(--orange-glow);padding:.3rem .65rem;border-radius:6px;margin-bottom:.7rem;
+}
+.section-card h2{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--navy);margin-bottom:.4rem;line-height:1.25}
+.section-card .deck{font-size:.85rem;color:var(--orange);font-weight:600;font-style:italic;margin-bottom:.9rem}
+.section-card .body{font-size:.95rem;color:var(--text-secondary);line-height:1.7;margin-bottom:1.4rem;max-width:760px}
+.section-card .body strong{color:var(--navy);font-weight:700}
+
+/* Animation stage */
+.stage{
+  background:var(--bg-light);border:1px dashed var(--border);
+  border-radius:var(--radius-sm);padding:1.5rem 1rem;margin-bottom:1rem;
+  position:relative;overflow:hidden;
+}
+.stage svg{width:100%;height:auto;display:block;max-height:380px}
+.stage-controls{display:flex;justify-content:space-between;align-items:center;margin-top:1rem;gap:1rem;flex-wrap:wrap}
+.step-label{
+  font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.06em;
+  color:var(--text-secondary);text-transform:uppercase;flex:1;min-width:200px;
+}
+.step-label.active{color:var(--orange);font-weight:700}
+.btn-play{
+  display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.2rem;border-radius:8px;
+  background:var(--orange);color:#fff;border:none;cursor:pointer;
+  font-family:inherit;font-size:.8rem;font-weight:600;letter-spacing:.03em;
+  transition:all .2s;
+}
+.btn-play:hover{background:var(--orange-dark);transform:translateY(-1px);box-shadow:0 4px 16px rgba(232,122,46,0.3)}
+.btn-play:disabled{opacity:.5;cursor:not-allowed}
+
+/* Animation primitives */
+.draw{stroke-dasharray:800;stroke-dashoffset:800}
+.draw.go{animation:draw 1s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.fade{opacity:0}
+.fade.go{animation:fade .55s ease forwards}
+@keyframes fade{to{opacity:1}}
+.pop{opacity:0;transform-origin:center;transform:scale(.4)}
+.pop.go{animation:pop .5s cubic-bezier(.34,1.56,.64,1) forwards}
+@keyframes pop{to{opacity:1;transform:scale(1)}}
+.slidein{opacity:0;transform:translateX(-20px)}
+.slidein.go{animation:slidein .55s ease forwards}
+@keyframes slidein{to{opacity:1;transform:translateX(0)}}
+.pulse-ring{animation:pulseRing 1.8s ease-in-out infinite}
+@keyframes pulseRing{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* Compare cards */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem}
+@media(max-width:680px){.compare{grid-template-columns:1fr}}
+.compare-card{
+  background:var(--bg-light);border-radius:var(--radius-sm);
+  border:1px solid var(--border);padding:1.2rem;
+}
+.compare-card.right{border-left:3px solid var(--orange)}
+.compare-card .tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.65rem;letter-spacing:.08em;padding:.25rem .6rem;border-radius:4px;background:var(--navy-dark);color:#fff;margin-bottom:.6rem}
+.compare-card.right .tag{background:var(--orange)}
+.compare-card h3{font-family:'DM Serif Display',serif;font-size:1.1rem;color:var(--navy);margin-bottom:.5rem}
+.compare-card ul{list-style:none;font-size:.85rem;line-height:1.7;color:var(--text-secondary)}
+.compare-card li{padding-left:1.2rem;position:relative;margin-bottom:.3rem}
+.compare-card li::before{content:"→";position:absolute;left:0;color:var(--orange);font-weight:700}
+
+/* Key chips */
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}
+.chip{
+  font-family:'JetBrains Mono',monospace;font-size:.72rem;
+  padding:.4rem .75rem;background:var(--bg-light);border:1px solid var(--border);
+  border-radius:50px;color:var(--text-secondary);
+}
+.chip b{color:var(--orange);font-weight:700}
+
+/* Why-agents grid */
+.why-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1rem}
+@media(max-width:760px){.why-grid{grid-template-columns:1fr}}
+.why-item{
+  padding:1.2rem;background:var(--bg-light);border-radius:var(--radius-sm);
+  border:1px solid var(--border);
+}
+.why-icon{width:40px;height:40px;border-radius:10px;background:var(--orange-glow);display:flex;align-items:center;justify-content:center;margin-bottom:.7rem;font-size:1.2rem}
+.why-item h4{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:.3rem}
+.why-item p{font-size:.8rem;color:var(--text-secondary);line-height:1.6}
+
+footer{text-align:center;padding:2rem 1rem;color:var(--text-muted);font-size:.75rem;letter-spacing:.05em}
+footer b{font-family:'DM Serif Display',serif;color:var(--navy);font-weight:400}
+footer b span{color:var(--orange)}
+</style>
+</head>
+<body>
+
+<!-- Brand bar with logo top-right -->
+<header class="brand-bar">
+  <div class="brand-left">
+    <div>
+      <div class="brand-name">Moksh<span>Path</span></div>
+      <div class="brand-tag">Lesson · Agents Track</div>
+    </div>
+  </div>
+  <img src="hero.svg" class="brand-logo" alt="MokshPath logo"/>
+</header>
+
+<section class="hero-section">
+  <div class="lesson-pill"><span class="dot"></span> Lesson 01 · Agents 101</div>
+  <h1 class="lesson-title">From LLMs to <em>Agents</em></h1>
+  <p class="lesson-sub">A language model can talk. An <strong>agent</strong> can think, choose tools, observe results, and try again. Let's see exactly what changes when we give a model hands and a memory.</p>
+</section>
+
+<div class="container">
+
+  <!-- ──────────────  SECTION 1: PLAIN LLM  ────────────── -->
+  <article class="section-card">
+    <div class="section-top"></div>
+    <div class="section-body">
+      <div class="section-num">PART 01</div>
+      <h2>The plain LLM</h2>
+      <div class="deck">Input → Output. Nothing else.</div>
+      <p class="body">An LLM by itself is a brilliant talker locked in a room. You slide a question under the door, it slides an answer back. It can't check the news, run code, or remember yesterday. For anything happening <em>right now</em>, it has to guess — or admit defeat.</p>
+
+      <div class="stage">
+        <svg viewBox="0 0 700 220" id="svg1">
+          <defs>
+            <marker id="arrR" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#E87A2E"/></marker>
+            <marker id="arrN" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#2B2D42"/></marker>
+          </defs>
+
+          <!-- user -->
+          <g id="s1-user" class="fade">
+            <circle cx="90" cy="110" r="34" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <circle cx="90" cy="100" r="10" fill="#2B2D42"/>
+            <path d="M72 128 Q90 116 108 128" stroke="#2B2D42" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <text x="90" y="172" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#6B6D7B">USER</text>
+          </g>
+
+          <!-- question arrow -->
+          <path id="s1-arr1" class="draw" d="M134 110 L268 110" stroke="#E87A2E" stroke-width="2.5" fill="none" marker-end="url(#arrR)"/>
+          <text id="s1-q" class="fade" x="200" y="100" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2B2D42">"weather today?"</text>
+
+          <!-- LLM box -->
+          <g id="s1-llm" class="fade">
+            <rect x="278" y="60" width="144" height="100" rx="10" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="350" y="105" text-anchor="middle" font-family="DM Serif Display" font-size="22" fill="#2B2D42">LLM</text>
+            <text x="350" y="125" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6B6D7B">brain in a box</text>
+          </g>
+
+          <!-- result arrow -->
+          <path id="s1-arr2" class="draw" d="M422 110 L556 110" stroke="#2B2D42" stroke-width="2.5" fill="none" marker-end="url(#arrN)"/>
+          <text id="s1-a" class="fade" x="490" y="100" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#2B2D42">"I don't know."</text>
+
+          <!-- stuck stamp -->
+          <g id="s1-stuck" class="pop">
+            <rect x="568" y="80" width="108" height="60" rx="8" fill="#E87A2E" stroke="#2B2D42" stroke-width="2"/>
+            <text x="622" y="108" text-anchor="middle" font-family="DM Serif Display" font-size="16" fill="#fff">stuck</text>
+            <text x="622" y="126" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#fff">no tools</text>
+          </g>
+        </svg>
+        <div class="stage-controls">
+          <div class="step-label" id="s1-label">▶ Press play to see the LLM hit its wall</div>
+          <button class="btn-play" data-target="1">Play animation →</button>
+        </div>
+      </div>
+
+      <div class="chips">
+        <span class="chip"><b>knows:</b> general facts from training</span>
+        <span class="chip"><b>can't:</b> check live data</span>
+        <span class="chip"><b>can't:</b> run code or call APIs</span>
+        <span class="chip"><b>can't:</b> remember past chats</span>
+      </div>
+    </div>
+  </article>
+
+  <!-- ──────────────  SECTION 2: REACT LOOP  ────────────── -->
+  <article class="section-card">
+    <div class="section-top"></div>
+    <div class="section-body">
+      <div class="section-num">PART 02</div>
+      <h2>The ReAct loop — how an agent thinks</h2>
+      <div class="deck">Reason · Act · Observe · repeat</div>
+      <p class="body">An agent thinks out loud, picks a <strong>tool</strong>, uses it, and reads what came back — then decides if it's done or needs another turn. This little circle is the heart of every agent you'll meet. The name says it all: <strong>Re</strong>ason + <strong>Act</strong> = ReAct.</p>
+
+      <div class="stage">
+        <svg viewBox="0 0 700 340" id="svg2">
+          <defs>
+            <marker id="arrR2" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#E87A2E"/></marker>
+          </defs>
+
+          <!-- user query banner -->
+          <g id="r-ex" class="fade">
+            <rect x="30" y="20" width="170" height="48" rx="8" fill="#fff" stroke="#2B2D42" stroke-width="1.5"/>
+            <text x="115" y="38" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">USER ASKS</text>
+            <text x="115" y="58" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">"weather today?"</text>
+          </g>
+
+          <!-- final answer banner -->
+          <g id="r-done" class="pop">
+            <rect x="500" y="20" width="180" height="48" rx="8" fill="#4CAF50" stroke="#2B2D42" stroke-width="1.5"/>
+            <text x="590" y="38" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#fff">FINAL ANSWER</text>
+            <text x="590" y="58" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#fff">"24°C, sunny."</text>
+          </g>
+
+          <!-- big circle -->
+          <circle cx="355" cy="190" r="100" fill="none" stroke="#2B2D42" stroke-width="1" stroke-dasharray="4 4" opacity=".25"/>
+
+          <!-- THOUGHT (top) -->
+          <g id="r-thought" class="pop">
+            <circle cx="355" cy="90" r="38" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="355" y="86" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#2B2D42">Thought</text>
+            <text x="355" y="102" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">reason</text>
+          </g>
+
+          <!-- ACTION (right) -->
+          <g id="r-action" class="pop">
+            <circle cx="455" cy="190" r="38" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="455" y="186" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#2B2D42">Action</text>
+            <text x="455" y="202" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">use a tool</text>
+          </g>
+
+          <!-- OBSERVE (bottom) -->
+          <g id="r-obs" class="pop">
+            <circle cx="355" cy="290" r="38" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="355" y="286" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#2B2D42">Observe</text>
+            <text x="355" y="302" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">read result</text>
+          </g>
+
+          <!-- DECIDE (left) -->
+          <g id="r-decide" class="pop">
+            <circle cx="255" cy="190" r="38" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="255" y="186" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#2B2D42">Decide</text>
+            <text x="255" y="202" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">again or stop</text>
+          </g>
+
+          <!-- arcs between nodes -->
+          <path id="r-a1" class="draw" d="M390 115 A 100 100 0 0 1 435 160" stroke="#E87A2E" stroke-width="2.5" fill="none" marker-end="url(#arrR2)"/>
+          <path id="r-a2" class="draw" d="M435 220 A 100 100 0 0 1 390 265" stroke="#E87A2E" stroke-width="2.5" fill="none" marker-end="url(#arrR2)"/>
+          <path id="r-a3" class="draw" d="M320 265 A 100 100 0 0 1 275 220" stroke="#E87A2E" stroke-width="2.5" fill="none" marker-end="url(#arrR2)"/>
+          <path id="r-a4" class="draw" d="M275 160 A 100 100 0 0 1 320 115" stroke="#E87A2E" stroke-width="2.5" fill="none" marker-end="url(#arrR2)"/>
+
+          <!-- center label -->
+          <text id="r-center" class="fade" x="355" y="186" text-anchor="middle" font-family="DM Serif Display" font-size="18" font-style="italic" fill="#E87A2E">ReAct</text>
+          <text id="r-center2" class="fade" x="355" y="204" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">loop</text>
+
+          <!-- query → thought -->
+          <path id="r-in" class="draw" d="M200 50 Q 280 60 340 60" stroke="#2B2D42" stroke-width="1.5" fill="none" stroke-dasharray="3 3"/>
+          <!-- thought → answer (after loop) -->
+          <path id="r-out" class="draw" d="M400 60 Q 480 50 510 50" stroke="#4CAF50" stroke-width="1.5" fill="none" stroke-dasharray="3 3"/>
+        </svg>
+        <div class="stage-controls">
+          <div class="step-label" id="s2-label">▶ Walk through one full ReAct loop</div>
+          <button class="btn-play" data-target="2">Play animation →</button>
+        </div>
+      </div>
+
+      <div class="chips">
+        <span class="chip"><b>Thought:</b> "I need live data — let me search."</span>
+        <span class="chip"><b>Action:</b> call <code>search("weather Kolkata")</code></span>
+        <span class="chip"><b>Observation:</b> "Sunny, 24°C"</span>
+        <span class="chip"><b>Decide:</b> done → answer the user</span>
+      </div>
+    </div>
+  </article>
+
+  <!-- ──────────────  SECTION 3: CHAIN vs AGENT  ────────────── -->
+  <article class="section-card">
+    <div class="section-top"></div>
+    <div class="section-body">
+      <div class="section-num">PART 03</div>
+      <h2>Chain vs Agent</h2>
+      <div class="deck">A railway track vs a taxi driver</div>
+      <p class="body">A <strong>chain</strong> is a fixed pipeline — A → B → C, every single time, no matter what. An <strong>agent</strong> picks the next step itself based on what it just saw, so the path can branch, loop, or skip steps. Same building blocks, very different freedom.</p>
+
+      <div class="stage">
+        <svg viewBox="0 0 700 280" id="svg3">
+          <defs>
+            <marker id="arrChain" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#6B6D7B"/></marker>
+            <marker id="arrAg" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#E87A2E"/></marker>
+          </defs>
+
+          <!-- CHAIN label -->
+          <text x="20" y="35" font-family="JetBrains Mono" font-size="11" fill="#6B6D7B" letter-spacing="2">CHAIN — fixed track</text>
+
+          <!-- chain nodes -->
+          <g id="c1" class="pop"><rect x="50" y="50" width="90" height="48" rx="6" fill="#fff" stroke="#2B2D42" stroke-width="2"/><text x="95" y="80" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#2B2D42">Step A</text></g>
+          <g id="c2" class="pop"><rect x="200" y="50" width="90" height="48" rx="6" fill="#fff" stroke="#2B2D42" stroke-width="2"/><text x="245" y="80" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#2B2D42">Step B</text></g>
+          <g id="c3" class="pop"><rect x="350" y="50" width="90" height="48" rx="6" fill="#fff" stroke="#2B2D42" stroke-width="2"/><text x="395" y="80" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#2B2D42">Step C</text></g>
+          <g id="c4" class="pop"><rect x="500" y="50" width="100" height="48" rx="6" fill="#4CAF50" stroke="#2B2D42" stroke-width="2"/><text x="550" y="80" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#fff">Done</text></g>
+
+          <path id="ca1" class="draw" d="M140 74 L195 74" stroke="#6B6D7B" stroke-width="2" fill="none" marker-end="url(#arrChain)"/>
+          <path id="ca2" class="draw" d="M290 74 L345 74" stroke="#6B6D7B" stroke-width="2" fill="none" marker-end="url(#arrChain)"/>
+          <path id="ca3" class="draw" d="M440 74 L495 74" stroke="#6B6D7B" stroke-width="2" fill="none" marker-end="url(#arrChain)"/>
+
+          <!-- AGENT label -->
+          <text x="20" y="155" font-family="JetBrains Mono" font-size="11" fill="#E87A2E" letter-spacing="2" font-weight="700">AGENT — chooses each step</text>
+
+          <!-- agent nodes -->
+          <g id="a1" class="pop"><rect x="50" y="170" width="90" height="48" rx="6" fill="#fff" stroke="#E87A2E" stroke-width="2"/><text x="95" y="200" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#2B2D42">Step A</text></g>
+          <g id="a2" class="pop"><rect x="200" y="170" width="90" height="48" rx="6" fill="#fff" stroke="#E87A2E" stroke-width="2"/><text x="245" y="200" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#2B2D42">Decide</text></g>
+          <g id="a3a" class="pop"><rect x="350" y="135" width="90" height="44" rx="6" fill="#fff" stroke="#E87A2E" stroke-width="2"/><text x="395" y="162" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">Search</text></g>
+          <g id="a3b" class="pop"><rect x="350" y="190" width="90" height="44" rx="6" fill="#fff" stroke="#E87A2E" stroke-width="2"/><text x="395" y="217" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">Calculate</text></g>
+          <g id="a3c" class="pop"><rect x="350" y="245" width="90" height="22" rx="4" fill="#fff" stroke="#E87A2E" stroke-width="1.5" stroke-dasharray="2 2"/><text x="395" y="261" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">...or skip</text></g>
+          <g id="a4" class="pop"><rect x="500" y="170" width="100" height="48" rx="6" fill="#4CAF50" stroke="#2B2D42" stroke-width="2"/><text x="550" y="200" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#fff">Done</text></g>
+
+          <path id="aa1" class="draw" d="M140 194 L195 194" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrAg)"/>
+          <path id="aa2" class="draw" d="M290 188 Q 320 188 345 158" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrAg)"/>
+          <path id="aa3" class="draw" d="M290 200 Q 320 200 345 213" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrAg)"/>
+          <path id="aa4" class="draw" d="M290 210 Q 320 245 345 254" stroke="#E87A2E" stroke-width="1.5" fill="none" stroke-dasharray="3 3" marker-end="url(#arrAg)"/>
+          <path id="aa5" class="draw" d="M440 158 Q 470 158 495 188" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrAg)"/>
+          <path id="aa6" class="draw" d="M440 213 Q 470 213 495 200" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrAg)"/>
+          <!-- loopback -->
+          <path id="aa7" class="draw" d="M440 167 Q 360 110 250 165" stroke="#E87A2E" stroke-width="1.5" fill="none" stroke-dasharray="3 3" marker-end="url(#arrAg)"/>
+          <text id="aa7-l" class="fade" x="350" y="118" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#E87A2E">"need more info — loop back"</text>
+        </svg>
+        <div class="stage-controls">
+          <div class="step-label" id="s3-label">▶ See how agents branch where chains can't</div>
+          <button class="btn-play" data-target="3">Play animation →</button>
+        </div>
+      </div>
+
+      <div class="compare">
+        <div class="compare-card">
+          <span class="tag">CHAIN</span>
+          <h3>Predictable & cheap</h3>
+          <ul>
+            <li>Steps decided <em>by you</em>, in advance</li>
+            <li>Same path every run — easy to test</li>
+            <li>Great for: summarise, translate, format</li>
+            <li>Breaks when the task needs a decision</li>
+          </ul>
+        </div>
+        <div class="compare-card right">
+          <span class="tag">AGENT</span>
+          <h3>Flexible & powerful</h3>
+          <ul>
+            <li>Steps decided <em>by the model</em>, at runtime</li>
+            <li>Can branch, retry, loop, skip</li>
+            <li>Great for: research, debugging, multi-step jobs</li>
+            <li>Costs more tokens & can wander — needs guardrails</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ──────────────  SECTION 4: WHY AGENTS  ────────────── -->
+  <article class="section-card">
+    <div class="section-top"></div>
+    <div class="section-body">
+      <div class="section-num">PART 04</div>
+      <h2>Why complex tasks need agents</h2>
+      <div class="deck">Three things a chain just can't do</div>
+      <p class="body">Imagine asking: <em>"Find the cheapest flight from Kolkata to Tokyo next Friday, check if my passport is still valid, and put it on my calendar."</em> No single LLM call can do this. The path branches, depends on real data, and may need to retry. That's agent territory.</p>
+
+      <div class="stage">
+        <svg viewBox="0 0 700 260" id="svg4">
+          <defs>
+            <marker id="arrW" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#E87A2E"/></marker>
+          </defs>
+
+          <!-- big request bubble -->
+          <g id="w-req" class="fade">
+            <rect x="30" y="20" width="220" height="60" rx="10" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="140" y="42" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">USER REQUEST</text>
+            <text x="140" y="60" text-anchor="middle" font-family="DM Serif Display" font-size="12" fill="#2B2D42">"Plan my Tokyo trip"</text>
+            <text x="140" y="74" text-anchor="middle" font-family="Plus Jakarta Sans" font-size="10" fill="#6B6D7B">(3 sub-tasks, depends on live data)</text>
+          </g>
+
+          <!-- agent center -->
+          <g id="w-agent" class="pop">
+            <circle cx="350" cy="130" r="42" fill="#E87A2E" stroke="#2B2D42" stroke-width="2"/>
+            <text x="350" y="128" text-anchor="middle" font-family="DM Serif Display" font-size="14" fill="#fff">Agent</text>
+            <text x="350" y="144" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#fff">orchestrates</text>
+          </g>
+
+          <!-- 3 sub-tasks -->
+          <g id="w-t1" class="pop">
+            <rect x="500" y="30" width="170" height="48" rx="8" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="585" y="50" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">✈ Flight search</text>
+            <text x="585" y="66" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">live API · price compare</text>
+          </g>
+          <g id="w-t2" class="pop">
+            <rect x="500" y="105" width="170" height="48" rx="8" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="585" y="125" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">🛂 Passport check</text>
+            <text x="585" y="141" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">read DB · validate</text>
+          </g>
+          <g id="w-t3" class="pop">
+            <rect x="500" y="180" width="170" height="48" rx="8" fill="#fff" stroke="#2B2D42" stroke-width="2"/>
+            <text x="585" y="200" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#2B2D42">📅 Add to calendar</text>
+            <text x="585" y="216" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B6D7B">only if step 1 ✓</text>
+          </g>
+
+          <!-- arrows -->
+          <path id="w-a0" class="draw" d="M250 50 Q 290 90 312 110" stroke="#2B2D42" stroke-width="2" fill="none" marker-end="url(#arrW)"/>
+          <path id="w-a1" class="draw" d="M390 110 Q 440 75 498 54" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrW)"/>
+          <path id="w-a2" class="draw" d="M392 130 L498 130" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrW)"/>
+          <path id="w-a3" class="draw" d="M390 150 Q 440 185 498 204" stroke="#E87A2E" stroke-width="2" fill="none" marker-end="url(#arrW)"/>
+
+          <!-- retry loopback hint -->
+          <path id="w-loop" class="draw" d="M585 78 Q 620 105 585 105" stroke="#E87A2E" stroke-width="1.5" fill="none" stroke-dasharray="3 3"/>
+          <text id="w-loop-l" class="fade" x="640" y="92" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#E87A2E">retry</text>
+        </svg>
+        <div class="stage-controls">
+          <div class="step-label" id="s4-label">▶ Watch one request fan out into many tool calls</div>
+          <button class="btn-play" data-target="4">Play animation →</button>
+        </div>
+      </div>
+
+      <div class="why-grid">
+        <div class="why-item">
+          <div class="why-icon">🌿</div>
+          <h4>Branching paths</h4>
+          <p>Real tasks have "if this, then that" decisions a fixed chain can't take.</p>
+        </div>
+        <div class="why-item">
+          <div class="why-icon">🛠</div>
+          <h4>Live tools</h4>
+          <p>Search, code, databases, calendars — the world keeps changing, agents reach for it.</p>
+        </div>
+        <div class="why-item">
+          <div class="why-icon">🔁</div>
+          <h4>Recover from errors</h4>
+          <p>Tool failed? Empty result? An agent can retry, ask differently, or try a different tool.</p>
+        </div>
+      </div>
+
+      <div class="chips" style="margin-top:1.4rem">
+        <span class="chip"><b>Rule of thumb:</b> if you'd write "depends on…" in the instructions, you want an agent.</span>
+      </div>
+    </div>
+  </article>
+
+</div>
+
+<footer>
+  <b>Moksh<span>Path</span></b> · Lesson 01 — From LLMs to Agents · next up: LangChain Agents in code
+</footer>
+
+<script>
+/* tiny animation runner: walks a sequence of [delay, elementId, className] tuples */
+function runSeq(seq, labelEl, finalLabel){
+  let t = 0;
+  for(const [delay, id, cls, labelText] of seq){
+    t += delay;
+    setTimeout(()=>{
+      if(id){
+        const el = document.getElementById(id);
+        if(el) el.classList.add(cls || 'go');
+      }
+      if(labelText && labelEl){
+        labelEl.textContent = labelText;
+        labelEl.classList.add('active');
+      }
+    }, t);
+  }
+  if(finalLabel && labelEl){
+    setTimeout(()=>{ labelEl.textContent = finalLabel; }, t + 800);
+  }
+  return t;
+}
+
+function resetSvg(svgId){
+  const svg = document.getElementById(svgId);
+  if(!svg) return;
+  svg.querySelectorAll('.go').forEach(el => el.classList.remove('go'));
+}
+
+const sequences = {
+  '1': {
+    svg:'svg1', label:document.getElementById('s1-label'),
+    final:'LLM has no tools — it can only guess.',
+    steps:[
+      [100,'s1-user','go','Step 1 · User asks a live question'],
+      [500,'s1-arr1','go',null],
+      [600,'s1-q','go',null],
+      [400,'s1-llm','go','Step 2 · LLM tries to answer from memory only'],
+      [900,'s1-arr2','go',null],
+      [600,'s1-a','go',null],
+      [400,'s1-stuck','go','Step 3 · Without tools, it gives up'],
+    ]
+  },
+  '2': {
+    svg:'svg2', label:document.getElementById('s2-label'),
+    final:'One loop done — agent returned a grounded answer.',
+    steps:[
+      [100,'r-ex','go','Step 1 · User asks for live weather'],
+      [600,'r-in','go',null],
+      [400,'r-thought','go','Step 2 · Thought — "I need a search tool"'],
+      [600,'r-a1','go',null],
+      [400,'r-action','go','Step 3 · Action — call search("weather")'],
+      [600,'r-a2','go',null],
+      [400,'r-obs','go','Step 4 · Observe — got "24°C sunny"'],
+      [600,'r-a3','go',null],
+      [400,'r-decide','go','Step 5 · Decide — enough info, finish'],
+      [500,'r-center','go',null],
+      [100,'r-center2','go',null],
+      [400,'r-a4','go',null],
+      [500,'r-out','go','Step 6 · Return final answer'],
+      [400,'r-done','go',null],
+    ]
+  },
+  '3': {
+    svg:'svg3', label:document.getElementById('s3-label'),
+    final:'Chains go straight. Agents pick the path.',
+    steps:[
+      [100,'c1','go','Step 1 · Chain runs A → B → C every time'],
+      [400,'ca1','go',null],
+      [300,'c2','go',null],
+      [400,'ca2','go',null],
+      [300,'c3','go',null],
+      [400,'ca3','go',null],
+      [300,'c4','go','Chain finished — same path always'],
+      [700,'a1','go','Step 2 · Agent starts at A…'],
+      [400,'aa1','go',null],
+      [300,'a2','go','Step 3 · …then decides what to do next'],
+      [400,'aa2','go',null],
+      [200,'a3a','go','Step 4 · Maybe search…'],
+      [300,'aa3','go',null],
+      [200,'a3b','go','…or calculate…'],
+      [300,'aa4','go',null],
+      [200,'a3c','go','…or skip the tool entirely'],
+      [500,'aa5','go',null],
+      [200,'aa6','go',null],
+      [300,'a4','go','Step 5 · …or even loop back for more info'],
+      [400,'aa7','go',null],
+      [200,'aa7-l','go',null],
+    ]
+  },
+  '4': {
+    svg:'svg4', label:document.getElementById('s4-label'),
+    final:'One request → multiple tools, coordinated by the agent.',
+    steps:[
+      [100,'w-req','go','Step 1 · A complex multi-part request comes in'],
+      [600,'w-a0','go',null],
+      [400,'w-agent','go','Step 2 · Agent reads it and plans the work'],
+      [600,'w-a1','go','Step 3 · Calls flight-search tool'],
+      [400,'w-t1','go',null],
+      [400,'w-loop','go','…retries if no results found'],
+      [300,'w-loop-l','go',null],
+      [400,'w-a2','go','Step 4 · Calls passport-DB tool'],
+      [400,'w-t2','go',null],
+      [400,'w-a3','go','Step 5 · Adds to calendar only if flight ✓'],
+      [400,'w-t3','go',null],
+    ]
+  },
+};
+
+document.querySelectorAll('.btn-play').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const target = btn.dataset.target;
+    const seq = sequences[target];
+    if(!seq) return;
+    resetSvg(seq.svg);
+    seq.label.classList.remove('active');
+    btn.disabled = true;
+    btn.textContent = 'Playing…';
+    const total = runSeq(seq.steps, seq.label, seq.final);
+    setTimeout(()=>{
+      btn.disabled = false;
+      btn.textContent = 'Replay animation →';
+    }, total + 1200);
+  });
+});
+
+/* auto-play first animation on load for delight */
+window.addEventListener('load', ()=>{
+  setTimeout(()=>{
+    document.querySelector('.btn-play[data-target="1"]').click();
+  }, 600);
+});
+</script>
+
+</body>
+</html>
